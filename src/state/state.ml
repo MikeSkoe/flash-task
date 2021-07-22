@@ -15,12 +15,12 @@ let second_item = Item.make
       "body of the\nthing btw"
 
 type msg =
+      | Next
+      | Prev
       | Nothing
       | Quit
 
-type t =
-      | View of Folder.t
-      | Review of Folder.t
+type t = View of Folder.t
 
 let empty = View(
       Folder.empty
@@ -28,6 +28,8 @@ let empty = View(
       |> Folder.add_item second_item
 )
 
-let update state = function
+let update (View folder) = function
+      | Next -> Folder.(t next folder)
+      | Prev -> Folder.(t prev folder)
       | Nothing -> state
       | Quit -> state
