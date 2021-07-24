@@ -4,23 +4,30 @@ module ItemSet = Set.Make(Item)
 type t = {
       itemSet: ItemSet.t;
       tagSet: TagSet.t;
-      selected: Id.t option;
 }
 
 let empty = {
       itemSet=ItemSet.empty;
       tagSet=TagSet.empty;
-      selected=None;
 } 
 
 let add_item (item: Item.t) t =
-      let tags =
-            item.tags
+      let tagSet =
+            item
+            |> Item.get_tags
             |> List.map Tag.make
-            |> List.fold_left (fun acc cur -> TagSet.add cur acc) TagSet.empty
+            |> List.fold_left (fun acc tag -> TagSet.add tag acc) t.tagSet
       in
       let itemSet = ItemSet.add item t.itemSet in
-      let tagSet = TagSet.union t.tagSet tags in
-      let selected = Some item.id in
-      { itemSet; tagSet; selected }
+      { itemSet; tagSet }
+
+let get_items t = ItemSet.elements t.itemSet
+
+(* --- TEST --- *)
+
+let sample = empty
+      |> add_item Item.sample_1
+      |> add_item Item.sample_2
+
+let%test _ = true
 

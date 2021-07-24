@@ -1,3 +1,5 @@
+type 'a t = int
+
 let (>>) f1 f2 arg = f2 (f1 arg)
 
 let counter = ref(0)
@@ -13,12 +15,7 @@ let get_next () =
       counter.contents <- next_id;
       next_id
 
-type t =
-      | Tag of int
-      | Item of int 
+let print t = print_endline @@ Printf.sprintf "%d" t
 
-let to_int = function
-      | Tag id -> id
-      | Item id -> id
+let compare a b = a - b
 
-let compare a b = (to_int a) - (to_int b)
