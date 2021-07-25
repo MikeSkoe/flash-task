@@ -11,6 +11,7 @@ let make title tags body =
 
 let get_id {id; _} = id
 let get_tags {tags; _} = tags
+let get_title {title; _} = title
 
 let has_tag (tag_id: Tag.t Id.t) (t: t) =
       let tag_ids = List.map Id.of_string t.tags in

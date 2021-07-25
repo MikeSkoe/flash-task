@@ -1,5 +1,4 @@
 (library
-  (name state)
   (inline_tests)
   (preprocess (pps ppx_inline_test))
-  (libraries utils))
+  (name utils))

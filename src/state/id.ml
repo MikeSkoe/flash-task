@@ -1,6 +1,6 @@
-type 'a t = int
+open Utils
 
-let (>>) f1 f2 arg = f2 (f1 arg)
+type 'a t = int
 
 let counter = ref(0)
 
