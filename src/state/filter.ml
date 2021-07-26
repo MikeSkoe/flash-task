@@ -110,5 +110,10 @@ let%test "\n--- [FILTER] remove tag to filter\n" =
             |> add_tag Tag.(get_id sample_1) items
             |> remove_tag Tag.(get_id sample_1) items
       in
-      with_tag = empty
+      let expected = {
+            tags = [];
+            items = [Item.(get_id sample_1); Item.(get_id sample_2)];
+            selected = Some (Item.(get_id sample_1));
+      } in
+      with_tag = expected
 

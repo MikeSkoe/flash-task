@@ -15,6 +15,9 @@ let get_next () =
       counter.contents <- next_id;
       next_id
 
+let get_same () =
+      1
+
 let print t = print_endline @@ Printf.sprintf "%d" t
 
 let compare a b = a - b

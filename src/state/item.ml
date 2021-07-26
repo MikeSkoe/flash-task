@@ -9,9 +9,13 @@ let make title tags body =
       let id = Id.get_next () in
       { id; title; tags; body } 
 
+let make_with_id title tags body =
+      { id=Id.get_same (); title; tags; body } 
+
 let get_id {id; _} = id
 let get_tags {tags; _} = tags
 let get_title {title; _} = title
+let get_body {body; _} = body
 
 let has_tag (tag_id: Tag.t Id.t) (t: t) =
       let tag_ids = List.map Id.of_string t.tags in
