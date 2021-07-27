@@ -6,11 +6,8 @@ type t = {
 }
 
 let make title tags body = 
-      let id = Id.get_next () in
+      let id = Id.of_string title in
       { id; title; tags; body } 
-
-let make_with_id title tags body =
-      { id=Id.get_same (); title; tags; body } 
 
 let get_id {id; _} = id
 let get_tags {tags; _} = tags
