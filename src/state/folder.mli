@@ -1,7 +1,7 @@
 type t
 
 val empty : t
-val add_item : Item.t -> t -> t
+val add_item : t -> Item.t -> t
 val get_items : t -> Item.t list
 val get_filter : t -> Filter.t
 

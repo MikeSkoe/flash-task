@@ -9,6 +9,8 @@ let make title tags body =
       let id = Id.of_string title in
       { id; title; tags; body } 
 
+let empty = make "" [] ""
+
 let get_id {id; _} = id
 let get_tags {tags; _} = tags
 let get_title {title; _} = title

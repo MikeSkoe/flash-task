@@ -19,3 +19,14 @@ let update (View folder) = function
       | Nothing -> View folder
       | Quit -> View folder
 
+let of_file filename =
+      let items =
+            Csv.load filename
+            |> List.map Parser.item_of_strings
+      in
+      let folder =
+            items
+            |> List.fold_left Folder.add_item Folder.empty
+      in
+      View folder
+

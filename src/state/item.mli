@@ -1,6 +1,7 @@
 type t
 
 val make : string -> string list -> string -> t
+val empty : t
 
 val get_id : t -> t Id.t
 val get_tags : t -> string list

@@ -17,7 +17,7 @@ let get_items t = ItemSet.elements t.itemSet
 
 let get_filter {filter; _} = filter
 
-let add_item (item: Item.t) t =
+let add_item t (item: Item.t) =
       let tagSet =
             item
             |> Item.get_tags
@@ -39,9 +39,7 @@ let prev_selected t =
 
 (* --- TEST --- *)
 
-let sample = empty
-      |> add_item Item.sample_1
-      |> add_item Item.sample_2
+let sample = List.fold_left add_item empty Item.[sample_1;sample_2]
 
 let%test "--- [FOLDER] get items" =
       let items_ids =

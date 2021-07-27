@@ -6,5 +6,7 @@ let rec loop state msg =
             let msg = Ui.draw state in
             loop state msg
 
-let _ = loop State.empty State.Nothing
+(* TODO: save data (done/archived/deleted/location) to file on exit*)
+
+let _ = loop State.(of_file "data.csv") State.Nothing
 
