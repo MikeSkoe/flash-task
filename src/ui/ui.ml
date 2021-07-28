@@ -4,21 +4,27 @@ open State
 
 let term = Term.create ()
 
-let draw_view (folder: Folder.t) =
+let draw_item (item: Item.t) selected =
+      let style =
+            match selected with
+            | Some id when id = Item.(get_id item) ->
+                  A.(bg white ++ fg black)
+            | _ ->
+                  A.empty
+      in
+      I.(string style Item.(get_title item))
+
+let draw_item_list (folder: Folder.t) =
       let filter = Folder.get_filter folder in
-      let fold_fn (acc: I.t) (curr: Item.t) =
-            let style =
-                  if Filter.get_selected filter = Some Item.(get_id curr)
-                  then A.(bg white ++ fg black)
-                  else A.empty
-            in
-            I.(acc <-> string style Item.(get_title curr))
+      let selected = Filter.get_selected filter in
+      let fold (acc: I.t) (item: Item.t) =
+            I.(acc <-> draw_item item selected)
       in
       Folder.(get_items folder)
-      |> List.fold_left fold_fn I.empty
+      |> List.fold_left fold I.empty
 
 let draw (View folder) =
-      Notty_unix.Term.image term (draw_view folder);
+      Notty_unix.Term.image term (draw_item_list folder);
 
       match Notty_unix.Term.event term with
             | `Key (`Escape, _) -> Quit
