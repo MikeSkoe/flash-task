@@ -1,51 +1,44 @@
-module TagSet = Set.Make(Tag) 
-module ItemSet = Set.Make(Item)
-
 type t = {
-      itemSet: ItemSet.t;
-      tagSet: TagSet.t;
-      filter: Filter.t;
+      items: Item.t list;
+      filters: Filter.t list;
+      selected: Item.t Id.t option;
 }
 
 let empty = {
-      itemSet=ItemSet.empty;
-      tagSet=TagSet.empty;
-      filter=Filter.empty;
+      items=[];
+      filters=[];
+      selected=None;
 } 
 
-let get_items t = ItemSet.elements t.itemSet
+let make items filters =
+    let selected = match items with
+    | head :: _tail -> Some Item.(get_id head)
+    | _ ->  None
+    in
+    {
+        items;
+        filters;
+        selected; 
+    }
 
-let get_filter {filter; _} = filter
+let get_items { items; _ } = items
+let get_filters { filters; _ } = filters
+let get_selected { selected; _ } = selected
 
-let add_item t (item: Item.t) =
-      let tagSet =
-            item
-            |> Item.get_tags
-            |> List.map Tag.make
-            |> List.fold_left (fun acc tag -> TagSet.add tag acc) t.tagSet
-      in
-      let itemSet = ItemSet.add item t.itemSet in
-      let filter = Filter.update_items ItemSet.(elements itemSet) t.filter in
-      { itemSet; tagSet; filter }
+let add_items items t =
+      let items = items @ t.items in
+      { t with items }
 
-let next_selected t =
-      let filter = Filter.next t.filter in
-      { t with filter }
+let add_filters filters t =
+      let filters = filters @ t.filters in
+      { t with filters }
 
-let prev_selected t =
-      let filter = Filter.prev t.filter in
-      { t with filter }
+let next_selected t = t
+
+let prev_selected t = t
 
 
 (* --- TEST --- *)
 
-let sample = List.fold_left add_item empty Item.[sample_1;sample_2]
-
-let%test "--- [FOLDER] get items" =
-      let items_ids =
-            sample
-            |> get_items 
-            |> List.map Item.get_id
-      in
-      items_ids = [Item.(get_id sample_1); Item.(get_id sample_2)]
+let%test "--- [FOLDER] " = true
 

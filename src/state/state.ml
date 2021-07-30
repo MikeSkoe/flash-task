@@ -11,7 +11,7 @@ type msg =
 
 type t = View of Folder.t
 
-let empty = View Folder.sample
+let empty = View Folder.empty
 
 let update (View folder) = function
       | Next -> View Folder.(next_selected folder)
@@ -24,9 +24,5 @@ let of_file filename =
             Csv.load filename
             |> List.map Parser.item_of_strings
       in
-      let folder =
-            items
-            |> List.fold_left Folder.add_item Folder.empty
-      in
-      View folder
+      View Folder.(Folder.add_items items empty)
 

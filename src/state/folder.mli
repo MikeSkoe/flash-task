@@ -1,13 +1,17 @@
 type t
 
 val empty : t
-val add_item : t -> Item.t -> t
+val make : Item.t list -> Filter.t list -> t
+
 val get_items : t -> Item.t list
-val get_filter : t -> Filter.t
+val get_filters : t -> Filter.t list
+val get_selected : t -> Item.t Id.t option
+
+val add_items : Item.t list -> t -> t
+val add_filters : Filter.t list -> t -> t
 
 val next_selected : t -> t
 val prev_selected : t -> t
 
 (* --- TEST --- *)
-val sample : t
 
