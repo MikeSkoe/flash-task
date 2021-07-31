@@ -20,9 +20,12 @@ let make items filters = {
 }
 
 let get_items { items; _ } filter =
-      if filter = Filter.empty
-      then Item.empty :: items
-      else Item.empty :: Filter.filter filter items
+      let items =
+            if filter = Filter.empty
+            then items
+            else Filter.filter filter items
+      in
+      items @ [Item.empty]
 
 let get_filters { filters; _ } = Filter.empty :: filters
 let get_selected { selected; _ } = selected

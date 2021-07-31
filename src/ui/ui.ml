@@ -48,19 +48,13 @@ let draw_item_list (folder: Folder.t) =
 let draw_item_detailed (folder: Folder.t) =
       let (_filter, item) = Folder.get_selected folder in
       let title = I.string A.empty Item.(get_title item) in
-      let body_string =
+      let body =
             item
             |> Item.get_body
-            |> String.to_seq
-            |> List.of_seq
-            |> List.map (function
-                  | '\n' -> 'N'
-                  | chr -> chr
-            )
-            |> List.to_seq 
-            |> String.of_seq
+            |> String.split_on_char '\n'
+            |> List.map @@ I.string A.empty
+            |> List.fold_left I.(<->) I.empty
       in
-      let body = I.string A.empty body_string in
       let divider = I.string A.empty "------" in
       I.(title <-> divider <-> body)
 
