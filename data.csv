@@ -1,4 +1,9 @@
-weed,,"tag, tag2, tag3"
-word,,tag2
-word1,,tag
-word2,,tag3
+weed,"# asdfasdf
+> sldfkjasdf
+
+* sdfafdhfshdf
+* sdfasd
+* pdf","first tag
+another tag
+learn"
+word,translation,some tags

@@ -45,14 +45,52 @@ let draw_item_list (folder: Folder.t) =
       in
       filtered
 
-let draw (View folder) =
-      Notty_unix.Term.image term (draw_item_list folder);
+let draw_item_detailed (folder: Folder.t) =
+      let (_filter, item) = Folder.get_selected folder in
+      let title = I.string A.empty Item.(get_title item) in
+      let body_string =
+            item
+            |> Item.get_body
+            |> String.to_seq
+            |> List.of_seq
+            |> List.map (function
+                  | '\n' -> 'N'
+                  | chr -> chr
+            )
+            |> List.to_seq 
+            |> String.of_seq
+      in
+      let body = I.string A.empty body_string in
+      let divider = I.string A.empty "------" in
+      I.(title <-> divider <-> body)
+
+let draw_view folder =
+      let folder_title = I.string A.empty "VIEW SCHENE" in
+      let view = draw_item_list folder in
+      Notty_unix.Term.image term I.(folder_title <-> view);
 
       match Notty_unix.Term.event term with
-            | `Key (`Escape, _) -> Quit
-            | `Key (`Arrow `Up, _) -> PrevItem
-            | `Key (`Arrow `Down, _) -> NextItem
-            | `Key (`Arrow `Left, _) -> PrevFilter
-            | `Key (`Arrow `Right, _) -> NextFilter
-            | _ -> Nothing
+            | `Key (`Escape, _) -> NavigationMsg Quit
+            | `Key (`Enter, _) -> NavigationMsg ToDetail
+            | `Key (`Arrow `Up, _) -> ViewMsg PrevItem
+            | `Key (`Arrow `Down, _) -> ViewMsg NextItem
+            | `Key (`Arrow `Left, _) -> ViewMsg PrevFilter
+            | `Key (`Arrow `Right, _) -> ViewMsg NextFilter
+            | _ -> NavigationMsg Nothing
+
+let draw_detail folder =
+      let folder_title = I.string A.empty "DETAIL SCHENE" in
+      let view = draw_item_detailed folder in
+      Notty_unix.Term.image term I.(folder_title <-> view);
+
+      match Notty_unix.Term.event term with
+            | `Key (`Escape, _) -> NavigationMsg ToView
+            | `Key (`Arrow `Left, _) -> DetailMsg PrevItem
+            | `Key (`Arrow `Right, _) -> DetailMsg NextItem
+            | _ -> NavigationMsg Nothing
+
+
+let draw = function
+      | View folder -> draw_view folder
+      | Detail folder -> draw_detail folder
 

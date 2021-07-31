@@ -3,25 +3,58 @@ module Filter = Filter
 module Tag = Tag
 module Item = Item
 
-type msg =
+type view_msg =
       | NextItem
       | PrevItem
       | NextFilter
       | PrevFilter
+
+type detail_msg =
+      | NextItem
+      | PrevItem
+
+type navigation_msg =
+      | ToDetail
+      | ToView
       | Nothing
       | Quit
 
-type t = View of Folder.t
+
+type msg =
+      | ViewMsg of view_msg
+      | DetailMsg of detail_msg
+      | NavigationMsg of navigation_msg
+
+type t =
+      | View of Folder.t
+      | Detail of Folder.t
 
 let empty = View Folder.empty
 
-let update (View folder) = function
-      | NextItem -> View Folder.(next_item folder)
-      | PrevItem -> View Folder.(prev_item folder)
-      | NextFilter -> View Folder.(next_filter folder)
-      | PrevFilter -> View Folder.(prev_filter folder)
-      | Nothing -> View folder
-      | Quit -> View folder
+let update folder msg = match folder, msg with
+      | (View folder, ViewMsg msg) -> begin match msg with
+            | NextItem -> View Folder.(next_item folder)
+            | PrevItem -> View Folder.(prev_item folder)
+            | NextFilter -> View Folder.(next_filter folder)
+            | PrevFilter -> View Folder.(prev_filter folder)
+      end
+      | (Detail folder, DetailMsg msg) -> begin match msg with
+            | NextItem -> Detail Folder.(next_item folder)
+            | PrevItem -> Detail Folder.(prev_item folder)
+      end
+      | (_, NavigationMsg msg) -> begin match msg with
+            | ToDetail -> begin match folder with
+                  | View folder -> Detail folder
+                  | Detail folder -> Detail folder
+            end
+            | ToView -> begin match folder with
+                  | View folder -> View folder
+                  | Detail folder -> View folder
+            end
+            | Nothing -> folder
+            | Quit -> folder
+      end
+      | _ -> folder
 
 let of_file filename =
       let items =
