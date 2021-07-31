@@ -1,7 +1,7 @@
 type t = {
       items: Item.t list;
       filters: Filter.t list;
-      selected: Item.t Id.t option;
+      selected: Item.t option;
 }
 
 let empty = {
@@ -10,32 +10,44 @@ let empty = {
       selected=None;
 } 
 
-let make items filters =
-    let selected = match items with
-    | head :: _tail -> Some Item.(get_id head)
-    | _ ->  None
-    in
-    {
-        items;
-        filters;
-        selected; 
-    }
+let make items filters = {
+      items;
+      filters;
+      selected=List.nth_opt items 0; 
+}
 
-let get_items { items; _ } = items
+let get_items { items; _ } filter =
+      if filter = Filter.empty
+      then items
+      else Filter.filter filter items
 let get_filters { filters; _ } = filters
 let get_selected { selected; _ } = selected
 
 let add_items items t =
       let items = items @ t.items in
-      { t with items }
-
+      let selected = List.nth_opt items 0 in
+      { t with items; selected }
 let add_filters filters t =
       let filters = filters @ t.filters in
       { t with filters }
 
-let next_selected t = t
+let sibling_selected take_left t =
+      let rec iter = function
+            | (left :: right :: tail, Some selected) ->
+                  begin match Item.(equal left selected) , Item.(equal right selected) with
+                  | (false, true) when take_left = true -> Some left
+                  | (true, false) when take_left = false -> Some right
+                  | _ -> iter (right :: tail, Some selected)
+                  end
+            | (_head :: tail, Some selected) ->
+                  iter (tail, Some selected)
+            | _ -> t.selected
+      in
+      let selected = iter (t.items, t.selected) in
+      { t with selected }
 
-let prev_selected t = t
+let next_selected = sibling_selected false
+let prev_selected = sibling_selected true
 
 
 (* --- TEST --- *)

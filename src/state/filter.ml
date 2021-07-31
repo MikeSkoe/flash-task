@@ -1,21 +1,22 @@
 type rule =
-    | WithTag of Tag.t Id.t
+    | WithTag of Tag.t
 
 type t = {
     name: string;
     rules: rule list;
 }
 
+let make name rules = { name; rules }
 let empty = {
     name="";
     rules=[];
 }
 
-let make name rules = { name; rules }
+let get_name {name; _} = name
 
 let is_suitable rules item =
     let fold acc rule = 
-        if acc = false then false else
+        if acc = true then true else
         match rule with
         | WithTag tag_id -> Item.has_tag tag_id item
     in
@@ -23,8 +24,4 @@ let is_suitable rules item =
 
 let filter t items = 
     List.filter (is_suitable t.rules) items
-
-(* --- TEST --- *)
-
-let%test "sample" = true
 

@@ -3,9 +3,9 @@ type t
 val empty : t
 val make : Item.t list -> Filter.t list -> t
 
-val get_items : t -> Item.t list
+val get_items : t -> Filter.t -> Item.t list
 val get_filters : t -> Filter.t list
-val get_selected : t -> Item.t Id.t option
+val get_selected : t -> Item.t option
 
 val add_items : Item.t list -> t -> t
 val add_filters : Filter.t list -> t -> t

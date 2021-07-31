@@ -1,9 +1,4 @@
-weed,"# asdfasdf
-> sldfkjasdf
-
-* sdfafdhfshdf
-* sdfasd
-* pdf","first tag, another tag, learn"
-word,translation,some tags
-word1,translation,some tags
-word2,translation,some tags
+weed,,"tag, tag2, tag3"
+word,,tag2
+word1,,tag
+word2,,tag3

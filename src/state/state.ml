@@ -24,5 +24,11 @@ let of_file filename =
             Csv.load filename
             |> List.map Parser.item_of_strings
       in
-      View Folder.(Folder.add_items items empty)
+      View Folder.(
+            add_items items empty
+            |> add_filters @@ [
+                  Filter.(make "---filter #tag" [WithTag Tag.(make "tag")]);
+                  Filter.(make "---filter #tag3" [WithTag Tag.(make "tag3")]);
+            ]
+      )
 

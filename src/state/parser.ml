@@ -6,7 +6,7 @@ let item_of_strings = function
                 | _ -> []
                 )
             in
-            Item.make title tags description
+            Item.make title List.(map Tag.make tags) description
       | title :: description :: _ ->
             Item.make title [] description
       | title :: _ ->
@@ -15,13 +15,14 @@ let item_of_strings = function
             Item.empty
 
 let strings_of_item item =
-    let title = Item.get_title item in
-    let body = Item.get_body item in
-    let tags =
-        Item.get_tags item
-        |> String.concat ", "
-    in
-    [title;body;tags]
+      let title = Item.get_title item in
+      let body = Item.get_body item in
+      let tags =
+            Item.get_tags item
+            |> List.map Tag.get_title
+            |> String.concat ", "
+      in
+      [title;body;tags]
 
 
 (* --- TEST --- *)
@@ -30,8 +31,8 @@ let strings_1 = ["first title"; "first description"; "first tag, another tag, le
 let strings_2 = ["second title"; "second description"; "single tags"]
 let strings_3 = ["third title"; "third description"; ""]
 
-let item_1 = Item.make "first title" ["first tag";"another tag";"learn"] "first description"
-let item_2 = Item.make "second title" ["single tags"] "second description"
+let item_1 = Item.make "first title" List.(["first tag";"another tag";"learn"] |> map Tag.make) "first description"
+let item_2 = Item.make "second title" List.(["single tags"] |> map Tag.make) "second description"
 let item_3 = Item.make "third title" [] "third description"
 
 let%test "\n--- [PARSER] strings to items\n" =
