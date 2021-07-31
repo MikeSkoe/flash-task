@@ -4,8 +4,10 @@ module Tag = Tag
 module Item = Item
 
 type msg =
-      | Next
-      | Prev
+      | NextItem
+      | PrevItem
+      | NextFilter
+      | PrevFilter
       | Nothing
       | Quit
 
@@ -14,8 +16,10 @@ type t = View of Folder.t
 let empty = View Folder.empty
 
 let update (View folder) = function
-      | Next -> View Folder.(next_selected folder)
-      | Prev -> View Folder.(prev_selected folder)
+      | NextItem -> View Folder.(next_item folder)
+      | PrevItem -> View Folder.(prev_item folder)
+      | NextFilter -> View Folder.(next_filter folder)
+      | PrevFilter -> View Folder.(prev_filter folder)
       | Nothing -> View folder
       | Quit -> View folder
 

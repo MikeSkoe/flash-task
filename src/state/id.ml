@@ -20,5 +20,3 @@ let get_same () =
 
 let print t = print_endline @@ Printf.sprintf "%d" t
 
-let compare a b = a - b
-

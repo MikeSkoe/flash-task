@@ -8,7 +8,7 @@ type t = {
 
 let make name rules = { name; rules }
 let empty = {
-    name="";
+    name="---all items";
     rules=[];
 }
 

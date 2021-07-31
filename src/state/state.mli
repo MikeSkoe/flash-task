@@ -3,7 +3,13 @@ module Filter = Filter
 module Tag = Tag
 module Item = Item
 
-type msg = Next | Prev | Nothing | Quit
+type msg =
+      | NextItem
+      | PrevItem
+      | NextFilter
+      | PrevFilter
+      | Nothing
+      | Quit
 
 type t = View of Folder.t
 
