@@ -1,11 +1,6 @@
 let item_of_strings = function
       | title :: description :: tags :: _ ->
-            let tags =
-                (match Csv.input_all @@ Csv.of_string tags with
-                | [tags] -> tags
-                | _ -> []
-                )
-            in
+            let tags = tags |> String.split_on_char '\n'in
             Item.make title List.(map Tag.make tags) description
       | title :: description :: _ ->
             Item.make title [] description
@@ -20,14 +15,15 @@ let strings_of_item item =
       let tags =
             Item.get_tags item
             |> List.map Tag.get_title
-            |> String.concat ", "
+            |> String.concat "\n"
       in
       [title;body;tags]
 
 
 (* --- TEST --- *)
     
-let strings_1 = ["first title"; "first description"; "first tag, another tag, learn"]
+      (*
+let strings_1 = ["first title"; "first description"; "first tag\nanother tag\nlearn"]
 let strings_2 = ["second title"; "second description"; "single tags"]
 let strings_3 = ["third title"; "third description"; ""]
 
@@ -50,3 +46,4 @@ let%test "\n--- [PARSER] items to strings\n" =
       in
       let expected = [strings_1;strings_2;strings_3] in
       items = expected
+      *)
