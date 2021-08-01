@@ -2,6 +2,7 @@ module Folder = Folder
 module Filter = Filter
 module Tag = Tag
 module Item = Item
+module Parser = Parser
 
 type view_msg =
       | NextItem

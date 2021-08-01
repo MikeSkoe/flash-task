@@ -2,6 +2,7 @@ module Folder = Folder
 module Filter = Filter
 module Tag = Tag
 module Item = Item
+module Parser = Parser
 
 type view_msg =
       | NextItem
@@ -32,4 +33,5 @@ type t =
 val empty : t
 val update : t -> msg -> t
 val of_file : string -> t
+val to_file : string -> t -> unit
 

@@ -1,0 +1,25 @@
+- export to CSV on exit
+- save org data
+    - filters
+- review code
+- write tests
+- edit body
+    - fast tags toggle/edit
+    - apply changed on exit
+        - register close edit callback on start edit
+- add
+    - filter
+    - item
+- delete
+    - delete filter
+    - delete item
+- update ui design
+    - filters positioning
+    - items is filters view
+    - item detail
+- reorder in global view
+- archiving
+    - item
+    - filter
+- write tests
+
