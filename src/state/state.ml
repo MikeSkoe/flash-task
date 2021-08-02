@@ -70,3 +70,13 @@ let of_file filename =
             ]
       )
 
+let to_file filename state =
+      let folder = match state with
+            | View folder -> folder
+            | Detail folder -> folder
+      in
+      Filter.empty
+      |> Folder.get_items folder
+      |> List.map Parser.strings_of_item
+      |> Csv.save filename
+
