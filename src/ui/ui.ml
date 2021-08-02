@@ -8,7 +8,12 @@ let draw_tags ~tags =
       let fold acc curr =
             let tag =
                   let title = Tag.(get_title curr) in
-                  I.(string A.empty Printf.(sprintf " #%s" title))
+                  let title_str =
+                        if acc = I.empty
+                        then Printf.(sprintf "#%s" title)
+                        else Printf.(sprintf " #%s" title)
+                  in
+                  I.(string A.(fg @@ gray 10) title_str)
             in
             I.(acc <|> tag)
       in
@@ -24,9 +29,18 @@ let draw_item (filter: Filter.t) (item: Item.t) (selected: Filter.t * Item.t) =
       in
       let title = I.(string style Item.(get_title item)) in
       let tags = draw_tags ~tags:Item.(get_tags item) in
-      I.(title <|> tags)
+      I.(title <-> tags)
 
-let draw_item_list (folder: Folder.t) =
+let draw_filter_title (filter: Filter.t) ((selected_filter, _): Filter.t * Item.t) = 
+      let title = Filter.get_name filter in
+      let style =
+            if filter = selected_filter
+            then A.(st underline)
+            else A.empty
+      in
+      I.string style title
+
+let draw_item_list (folder: Folder.t): I.t =
       let selected = Folder.get_selected folder in
       let fold (filter: Filter.t) (acc: I.t) (item: Item.t) =
             I.(acc <-> draw_item filter item selected)
@@ -38,7 +52,7 @@ let draw_item_list (folder: Folder.t) =
                         Folder.get_items folder filter
                         |> List.fold_left (fold filter) I.empty
                   in
-                  let title = Filter.get_name filter |> I.string A.empty in
+                  let title = draw_filter_title filter selected in
                   I.(title <-> items)
             )
             |> List.fold_left I.(<|>) I.empty

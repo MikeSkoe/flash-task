@@ -25,7 +25,7 @@ let get_items { items; _ } filter =
             then items
             else Filter.filter filter items
       in
-      items @ [Item.empty]
+      items
 
 let get_filters { filters; _ } = Filter.empty :: filters
 let get_selected { selected; _ } = selected
