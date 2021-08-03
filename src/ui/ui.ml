@@ -12,15 +12,6 @@ module UINode = struct
             | Selected
             | Underline
 
-      let text style =
-            let style = match style with
-                  | Normal -> A.empty
-                  | Secondary -> A.(fg @@ gray 10)
-                  | Selected -> A.(bg white ++ fg black)
-                  | Underline -> A.(st underline)
-            in
-            I.string style
-
       let concat connect items = 
             let rec iter acc = function
                   | [] -> acc
@@ -30,6 +21,21 @@ module UINode = struct
 
       let ver = concat I.(<->)
       let hor = concat I.(<|>)
+
+      let convert_style = function
+            | Normal -> A.empty
+            | Secondary -> A.(fg @@ gray 10)
+            | Selected -> A.(bg white ++ fg black)
+            | Underline -> A.(st underline)
+
+      let text =
+            convert_style
+            >> I.string
+
+      let multiline =
+            String.split_on_char '\n'
+            >> List.map @@ text Normal
+            >> ver 
 end
 
 module UITag = struct
@@ -40,67 +46,72 @@ module UITag = struct
 end
 
 module UIItem = struct
-      let draw selected item =
+      let draw selected_item item =
             let tags =
                   Item.get_tags item
                   |> List.map UITag.draw
                   |> UINode.hor
             in
-            let style =
-                  if selected = item
-                  then UINode.Selected
-                  else UINode.Normal
-            in
             let title =
                   Item.get_title item
-                  |> UINode.(text style)
+                  |> UINode.(text (if selected_item = item then Selected else Normal))
             in
             I.(title <-> tags)
 end
 
-let draw_filter_title (filter: Filter.t) (selected_filter: Filter.t) = 
-      let title = Filter.get_name filter in
-      let style =
-            if filter = selected_filter
-            then A.(st underline)
-            else A.empty
-      in
-      I.string style title
+module UIFilter = struct
+      let draw folder filter =
+            let (selected_filter, selected_item) = Folder.get_selected folder in
+            let is_selected = selected_filter = filter in
+            let items =
+                  Folder.get_items folder filter
+                  |> List.map @@ UIItem.draw (if is_selected then selected_item else Item.empty)
+                  |> UINode.ver 
+            in
+            let title =
+                  Filter.get_name filter
+                  |> UINode.(text (if is_selected then Underline else Normal))
+            in
+            I.(title <-> items)
+end
 
-let draw_item_list (folder: Folder.t): I.t =
-      let (selected_filter, selected_item) = Folder.get_selected folder in
-      let filtered =
-            Folder.get_filters folder
-            |> List.map (fun filter ->
-                  let items =
-                        Folder.get_items folder filter
-                        |> List.map @@ UIItem.draw selected_item
-                        |> UINode.ver 
-                  in
-                  let title = draw_filter_title filter selected_filter in
-                  I.(title <-> items)
-            )
-            |> UINode.hor
-      in
-      filtered
+module UIViewPage = struct
+      let draw folder width = 
+            let filters =
+                  Folder.get_filters folder
+                  |> List.map @@ (
+                        UIFilter.draw folder
+                        >> I.hsnap ~align:`Left (width / 3)
+                        >> I.pad ~r:3
+                  )
+                  |> UINode.hor
+            in
+            filters
+end
 
-let draw_item_detailed (folder: Folder.t) =
-      let (_filter, item) = Folder.get_selected folder in
-      let title = I.string A.empty Item.(get_title item) in
-      let body =
-            item
-            |> Item.get_body
-            |> String.split_on_char '\n'
-            |> List.map @@ I.string A.empty
-            |> List.fold_left I.(<->) I.empty
-      in
-      let divider = I.string A.empty "------" in
-      I.(title <-> divider <-> body)
+module UIDetailPage = struct
+      let draw folder = 
+            let (_, selected_item) = Folder.get_selected folder in
+            let title =
+                  Item.get_title selected_item
+                  |> UINode.(text Normal)
+            in
+            let body =
+                  Item.get_body selected_item
+                  |> UINode.multiline
+            in
+            let divider = I.string A.empty "------" in
+            I.(title <-> divider <-> body)
+end
 
 let draw_view folder =
-      let folder_title = I.string A.empty "VIEW SCHENE" in
-      let view = draw_item_list folder in
-      Notty_unix.Term.image term I.(folder_title <-> view);
+      let (width, height) = Notty_unix.Term.size term in
+      let view =
+            UIViewPage.draw folder width
+            |> I.vsnap ~align:`Top (height / 4)
+      in
+      let detail = UIDetailPage.draw folder in
+      Notty_unix.Term.image term I.(view <-> detail);
 
       match Notty_unix.Term.event term with
             | `Key (`Escape, _) -> NavigationMsg Quit
@@ -112,9 +123,8 @@ let draw_view folder =
             | _ -> NavigationMsg Nothing
 
 let draw_detail folder =
-      let folder_title = I.string A.empty "DETAIL SCHENE" in
-      let view = draw_item_detailed folder in
-      Notty_unix.Term.image term I.(folder_title <-> view);
+      let view = UIDetailPage.draw folder in
+      Notty_unix.Term.image term view;
 
       match Notty_unix.Term.event term with
             | `Key (`Escape, _) -> NavigationMsg ToView
