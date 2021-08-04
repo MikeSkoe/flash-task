@@ -17,18 +17,24 @@ type detail_msg =
 type navigation_msg =
       | ToDetail
       | ToView
+      | ToAdd
       | Nothing
       | Quit
 
+type add_msg =
+      | Save of Item.t
+      | Cancel
 
 type msg =
       | ViewMsg of view_msg
       | DetailMsg of detail_msg
       | NavigationMsg of navigation_msg
+      | AddMsg of add_msg
 
 type t =
       | View of Folder.t
       | Detail of Folder.t
+      | Add of Folder.t
 
 val empty : t
 val update : t -> msg -> t

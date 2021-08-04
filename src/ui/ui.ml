@@ -104,6 +104,15 @@ module UIDetailPage = struct
             I.(title <-> divider <-> body)
 end
 
+module UIAddPage = struct
+      let draw folder =
+            let (_, selected_item) = Folder.get_selected folder in
+            Item.get_tags selected_item
+            |> List.map UITag.draw
+            |> UINode.hor
+
+end
+
 let draw_view folder =
       let (width, height) = Notty_unix.Term.size term in
       let view =
@@ -120,6 +129,7 @@ let draw_view folder =
             | `Key (`Arrow `Down, _) -> ViewMsg NextItem
             | `Key (`Arrow `Left, _) -> ViewMsg PrevFilter
             | `Key (`Arrow `Right, _) -> ViewMsg NextFilter
+            | `Key (`Tab, _) -> NavigationMsg ToAdd
             | _ -> NavigationMsg Nothing
 
 let draw_detail folder =
@@ -132,8 +142,16 @@ let draw_detail folder =
             | `Key (`Arrow `Right, _) -> DetailMsg NextItem
             | _ -> NavigationMsg Nothing
 
+let draw_add folder =
+      let view = UIAddPage.draw folder in
+      Notty_unix.Term.image term view;
+
+      match Notty_unix.Term.event term with
+            | `Key (`Escape, _) -> NavigationMsg ToView
+            | _ -> NavigationMsg Nothing
 
 let draw = function
       | View folder -> draw_view folder
       | Detail folder -> draw_detail folder
+      | Add folder -> draw_add folder
 

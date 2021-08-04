@@ -17,20 +17,31 @@ type detail_msg =
 type navigation_msg =
       | ToDetail
       | ToView
+      | ToAdd
       | Nothing
       | Quit
 
+type add_msg =
+      | Save of Item.t
+      | Cancel
 
 type msg =
       | ViewMsg of view_msg
       | DetailMsg of detail_msg
       | NavigationMsg of navigation_msg
+      | AddMsg of add_msg
 
 type t =
       | View of Folder.t
       | Detail of Folder.t
+      | Add of Folder.t
 
 let empty = View Folder.empty
+
+let unwrap_folder = function
+      | View folder -> folder
+      | Detail folder -> folder
+      | Add folder -> folder
 
 let update folder msg = match folder, msg with
       | (View folder, ViewMsg msg) -> begin match msg with
@@ -43,15 +54,14 @@ let update folder msg = match folder, msg with
             | NextItem -> Detail Folder.(next_item folder)
             | PrevItem -> Detail Folder.(prev_item folder)
       end
+      | (Add folder, AddMsg msg) -> begin match msg with
+            | Save item -> View Folder.(add_items [item] folder)
+            | Cancel -> View folder
+      end
       | (_, NavigationMsg msg) -> begin match msg with
-            | ToDetail -> begin match folder with
-                  | View folder -> Detail folder
-                  | Detail folder -> Detail folder
-            end
-            | ToView -> begin match folder with
-                  | View folder -> View folder
-                  | Detail folder -> View folder
-            end
+            | ToDetail -> Detail (unwrap_folder folder)
+            | ToView -> View (unwrap_folder folder)
+            | ToAdd -> Add (unwrap_folder folder)
             | Nothing -> folder
             | Quit -> folder
       end
@@ -71,12 +81,8 @@ let of_file filename =
       )
 
 let to_file filename state =
-      let folder = match state with
-            | View folder -> folder
-            | Detail folder -> folder
-      in
       Filter.empty
-      |> Folder.get_items folder
+      |> Folder.get_items @@ unwrap_folder state
       |> List.map Parser.strings_of_item
       |> Csv.save filename
 
