@@ -4,81 +4,100 @@ module Tag = Tag
 module Item = Item
 module Parser = Parser
 
-type view_msg =
-      | NextItem
-      | PrevItem
-      | NextFilter
-      | PrevFilter
+module ViewState = struct
+      type t = Folder.t
 
-type detail_msg =
-      | NextItem
-      | PrevItem
+      type msg = 
+            | NextItem
+            | PrevItem
+            | NextFilter
+            | PrevFilter
+
+      let update folder = function
+            | NextItem -> Folder.(next_item folder)
+            | PrevItem -> Folder.(prev_item folder)
+            | NextFilter -> Folder.(next_filter folder)
+            | PrevFilter -> Folder.(prev_filter folder)
+end
+
+module DetailState = struct
+      type t = Folder.t * For_ui.Input.t
+
+      type msg =
+            | NextItem
+            | PrevItem
+            | ShiftCursor of int * int
+            | TypeChar of char
+            | DelChar
+
+      let update (folder, edit_data) = function
+            | NextItem ->
+                  let folder = Folder.next_item folder in
+                  (folder, edit_data)
+            | PrevItem ->
+                  let folder = Folder.prev_item folder in
+                  (folder, edit_data)
+            | ShiftCursor (shift_x, shift_y) ->
+                  let edit_data = For_ui.Input.(shift_cursor (shift_x, shift_y) edit_data) in
+                  (folder, edit_data)
+            | TypeChar chr ->
+                  let edit_data = For_ui.Input.type_char chr edit_data in
+                  (folder, edit_data)
+            | DelChar ->
+                  let edit_data = For_ui.Input.del_char edit_data in
+                  (folder, edit_data)
+end
 
 type navigation_msg =
+      | Save of Item.t * Folder.t
       | ToDetail
       | ToView
-      | ToAdd
       | Nothing
       | Quit
 
-type add_msg =
-      | Save of Item.t
-      | Cancel
-
 type msg =
-      | ViewMsg of view_msg
-      | DetailMsg of detail_msg
+      | ViewMsg of ViewState.msg
+      | DetailMsg of DetailState.msg
       | NavigationMsg of navigation_msg
-      | AddMsg of add_msg
 
 type t =
-      | View of Folder.t
-      | Detail of Folder.t
-      | Add of Folder.t
+      | View of ViewState.t
+      | Detail of DetailState.t
 
 let empty = View Folder.empty
 
 let unwrap_folder = function
       | View folder -> folder
-      | Detail folder -> folder
-      | Add folder -> folder
+      | Detail (folder, _) -> folder
 
-let update folder msg = match folder, msg with
-      | (View folder, ViewMsg msg) -> begin match msg with
-            | NextItem -> View Folder.(next_item folder)
-            | PrevItem -> View Folder.(prev_item folder)
-            | NextFilter -> View Folder.(next_filter folder)
-            | PrevFilter -> View Folder.(prev_filter folder)
-      end
-      | (Detail folder, DetailMsg msg) -> begin match msg with
-            | NextItem -> Detail Folder.(next_item folder)
-            | PrevItem -> Detail Folder.(prev_item folder)
-      end
-      | (Add folder, AddMsg msg) -> begin match msg with
-            | Save item -> View Folder.(add_items [item] folder)
-            | Cancel -> View folder
-      end
+let update state msg = match state, msg with
+      | (View folder, ViewMsg msg) ->
+            View ViewState.(update folder msg)
+
+      | (Detail (folder, edit_data), DetailMsg msg) ->
+            Detail DetailState.(update (folder, edit_data) msg)
+
       | (_, NavigationMsg msg) -> begin match msg with
-            | ToDetail -> Detail (unwrap_folder folder)
-            | ToView -> View (unwrap_folder folder)
-            | ToAdd -> Add (unwrap_folder folder)
-            | Nothing -> folder
-            | Quit -> folder
+            | Save (item, folder) -> View Folder.(add_items [item] folder)
+            | ToDetail -> Detail ((unwrap_folder state), For_ui.Input.empty)
+            | ToView -> View (unwrap_folder state)
+            | Nothing -> state
+            | Quit -> state
       end
-      | _ -> folder
+      | _ -> state
 
 let of_file filename =
       let items =
             Csv.load filename
             |> List.map Parser.item_of_strings
       in
-      View Folder.(
-            add_items items empty
+      View Folder.(add_items items empty
             |> add_filters @@ [
                   Filter.(make "---filter #tag" [WithTag Tag.(make "tag")]);
                   Filter.(make "---filter #tag3" [WithTag Tag.(make "tag3")]);
-            ]
-      )
+            ])
+
+let debug = Detail Folder.(empty, For_ui.Input.empty)
 
 let to_file filename state =
       Filter.empty

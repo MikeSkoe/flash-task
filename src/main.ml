@@ -5,6 +5,10 @@ let rec loop state msg =
             let state = State.update state msg in
             let msg = Ui.draw state in
             loop state msg
+
+let _ = State.(loop debug (NavigationMsg Nothing))
  
+(*
 let _ = loop State.(of_file "data.csv") State.(NavigationMsg Nothing)
+*)
 

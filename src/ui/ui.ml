@@ -12,36 +12,36 @@ module UINode = struct
             | Selected
             | Underline
 
-      let concat connect items = 
-            let rec iter acc = function
-                  | [] -> acc
-                  | head :: tail -> iter (connect acc head) tail
-            in
-            iter I.empty items
-
-      let ver = concat I.(<->)
-      let hor = concat I.(<|>)
-
       let convert_style = function
             | Normal -> A.empty
             | Secondary -> A.(fg @@ gray 10)
             | Selected -> A.(bg white ++ fg black)
             | Underline -> A.(st underline)
 
-      let text =
-            convert_style
-            >> I.string
+      let text ?cursor:(cursor=(-1)) style str =
+            let style = convert_style style in
+            match cursor with
+            | -1 ->
+                  I.string style str
+            | pos ->
+                  let (before, curr, after) = For_ui.Input.split_on_pos pos str in
+                  let before = I.string style before in
+                  let curr = I.string (convert_style Selected) curr in
+                  let after = I.string style after in
+                  I.(before <|> curr <|> after)
+end
 
-      let multiline =
+module UIInput = struct
+      let draw (_chr, _line) =
             String.split_on_char '\n'
-            >> List.map @@ text Normal
-            >> ver 
+            >> List.map @@ UINode.text Normal
+            >> I.vcat
 end
 
 module UITag = struct
       let draw =
             Tag.get_title
-            >> Printf.sprintf "#%s "
+            >> Printf.sprintf "[%s]"
             >> UINode.(text Secondary)
 end
 
@@ -50,7 +50,7 @@ module UIItem = struct
             let tags =
                   Item.get_tags item
                   |> List.map UITag.draw
-                  |> UINode.hor
+                  |> I.hcat
             in
             let title =
                   Item.get_title item
@@ -66,7 +66,7 @@ module UIFilter = struct
             let items =
                   Folder.get_items folder filter
                   |> List.map @@ UIItem.draw (if is_selected then selected_item else Item.empty)
-                  |> UINode.ver 
+                  |> I.vcat 
             in
             let title =
                   Filter.get_name filter
@@ -84,34 +84,37 @@ module UIViewPage = struct
                         >> I.hsnap ~align:`Left (width / 3)
                         >> I.pad ~r:3
                   )
-                  |> UINode.hor
+                  |> I.hcat
             in
             filters
 end
 
 module UIDetailPage = struct
-      let draw folder = 
-            let (_, selected_item) = Folder.get_selected folder in
-            let title =
-                  Item.get_title selected_item
-                  |> UINode.(text Normal)
-            in
-            let body =
-                  Item.get_body selected_item
-                  |> UINode.multiline
-            in
-            let divider = I.string A.empty "------" in
-            I.(title <-> divider <-> body)
+      let draw _folder ({pos; data} : For_ui.Input.t) = 
+            match String.split_on_char '\n' data with
+            | title :: body ->
+                  let (chr, line) = pos in
+                  let title =
+                        if line = 0
+                        then UINode.(text ~cursor:chr Normal title)
+                        else UINode.(text Normal title)
+                  in 
+                  let divider = UINode.(text Secondary "-----") in
+                  let body =
+                        body
+                        |> List.mapi (fun index str ->
+                              if index = line
+                              then UINode.(text ~cursor:chr Normal str)
+                              else UINode.(text Normal str)
+                        )
+                        |> I.vcat
+                  in
+                  I.(title <-> divider <-> body)
+            | [] ->
+                  I.empty
 end
 
-module UIAddPage = struct
-      let draw folder =
-            let (_, selected_item) = Folder.get_selected folder in
-            Item.get_tags selected_item
-            |> List.map UITag.draw
-            |> UINode.hor
-
-end
+(* --- *)
 
 let draw_view folder =
       let (width, height) = Notty_unix.Term.size term in
@@ -119,39 +122,33 @@ let draw_view folder =
             UIViewPage.draw folder width
             |> I.vsnap ~align:`Top (height / 4)
       in
-      let detail = UIDetailPage.draw folder in
-      Notty_unix.Term.image term I.(view <-> detail);
+      Notty_unix.Term.image term view;
 
       match Notty_unix.Term.event term with
-            | `Key (`Escape, _) -> NavigationMsg Quit
-            | `Key (`Enter, _) -> NavigationMsg ToDetail
             | `Key (`Arrow `Up, _) -> ViewMsg PrevItem
             | `Key (`Arrow `Down, _) -> ViewMsg NextItem
             | `Key (`Arrow `Left, _) -> ViewMsg PrevFilter
             | `Key (`Arrow `Right, _) -> ViewMsg NextFilter
-            | `Key (`Tab, _) -> NavigationMsg ToAdd
+
+            | `Key (`Escape, _) -> NavigationMsg Quit
+            | `Key (`Enter, _) -> NavigationMsg ToDetail
             | _ -> NavigationMsg Nothing
 
-let draw_detail folder =
-      let view = UIDetailPage.draw folder in
+let draw_detail folder edit_data =
+      let view = UIDetailPage.draw folder edit_data in
       Notty_unix.Term.image term view;
 
       match Notty_unix.Term.event term with
-            | `Key (`Escape, _) -> NavigationMsg ToView
-            | `Key (`Arrow `Left, _) -> DetailMsg PrevItem
-            | `Key (`Arrow `Right, _) -> DetailMsg NextItem
-            | _ -> NavigationMsg Nothing
+            | `Key (`Arrow `Left, _) -> DetailMsg (ShiftCursor (-1, 0))
+            | `Key (`Arrow `Right, _) -> DetailMsg (ShiftCursor (1, 0))
+            | `Key (`ASCII chr, _) -> DetailMsg (TypeChar chr)
+            | `Key (`Enter, _) -> DetailMsg (TypeChar '\n')
+            | `Key (`Backspace, _) -> DetailMsg DelChar
 
-let draw_add folder =
-      let view = UIAddPage.draw folder in
-      Notty_unix.Term.image term view;
-
-      match Notty_unix.Term.event term with
             | `Key (`Escape, _) -> NavigationMsg ToView
             | _ -> NavigationMsg Nothing
 
 let draw = function
       | View folder -> draw_view folder
-      | Detail folder -> draw_detail folder
-      | Add folder -> draw_add folder
+      | Detail (folder, edit_data) -> draw_detail folder edit_data
 
