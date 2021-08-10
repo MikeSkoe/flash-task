@@ -42,8 +42,13 @@ let select_first t =
       { t with selected }
 
 let add_items items t =
-      let items = items @ t.items in
+      let old_items =
+            t.items
+            |> List.filter (fun item -> not (List.exists Item.(eq item) items))
+      in
+      let items = items @ old_items in
       select_first { t with items }
+
 let add_filters filters t =
       let filters = filters @ t.filters in
       select_first { t with filters }

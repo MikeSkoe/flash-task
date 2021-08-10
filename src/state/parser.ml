@@ -1,3 +1,5 @@
+open Utils
+
 let item_of_strings = function
       | title :: description :: tags :: _ ->
             let tags = tags |> String.split_on_char '\n'in
@@ -23,13 +25,23 @@ let item_of_string str = match String.split_on_char '\n' str with
       | [] ->
             Item.empty
       | title :: [] ->
+            let title = String.trim title in
             Item.make title [] ""
       | title :: tags :: [] ->
-            let tags = tags |> String.split_on_char ',' in
-            Item.make title List.(map Tag.make tags) ""
+            let title = String.trim title in
+            let tags = tags
+                  |> String.split_on_char ','
+                  |> List.map (String.trim >> Tag.make)
+            in
+            Item.make title tags ""
       | title :: tags :: body ->
-            let tags = tags |> String.split_on_char ',' in
-            Item.make title List.(map Tag.make tags) String.(concat "\n" body)
+            let title = String.trim title in
+            let tags = tags
+                  |> String.split_on_char ','
+                  |> List.map (String.trim >> Tag.make)
+            in
+            let body = String.(concat "\n" body) in
+            Item.make title tags body
 
 let string_of_item item =
       let title = Item.get_title item in

@@ -18,17 +18,15 @@ module UINode = struct
             | Selected -> A.(bg white ++ fg black)
             | Underline -> A.(st underline)
 
-      let text ?cursor:(cursor=(-1)) style str =
+      let text = convert_style >> I.string
+
+      let editable cursor style str =
             let style = convert_style style in
-            match cursor with
-            | -1 ->
-                  I.string style str
-            | pos ->
-                  let (before, curr, after) = For_ui.Input.split_on_pos pos str in
-                  let before = I.string style before in
-                  let curr = I.string (convert_style Selected) curr in
-                  let after = I.string style after in
-                  I.(before <|> curr <|> after)
+            let (before, curr, after) = For_ui.Input.split_on_pos cursor str in
+            let before = I.string style before in
+            let curr = I.string (convert_style Selected) curr in
+            let after = I.string style after in
+            I.(before <|> curr <|> after)
 end
 
 module UIInput = struct
@@ -57,7 +55,6 @@ module UIItem = struct
                   |> UINode.(text (if selected_item = item then Selected else Normal))
             in
             I.(title <-> tags)
-            |> I.pad ~l:1 ~r:0 ~t:0 ~b:1
 end
 
 module UIFilter = struct
@@ -92,48 +89,40 @@ end
 
 module UIDetailPage = struct
       let draw _folder ({pos; data} : For_ui.Input.t) = 
+            let image_of_title chr = function
+                  | 0 -> UINode.(editable chr Normal)
+                  | _ -> UINode.(text Normal)
+            in
+            let image_of_tags chr = function
+                  | 1 -> UINode.(editable chr Secondary)
+                  | _ -> UINode.(text Secondary)
+            in
+            let image_of_body chr line =
+                  List.mapi (fun index str ->
+                        if index + 2 = line
+                        then UINode.(editable chr Normal str)
+                        else UINode.(text Normal str)
+                  )
+                  >> I.vcat
+            in
             match String.split_on_char '\n' data with
             | [] ->
                   I.empty
             | title :: [] ->
                   let (chr, line) = pos in
-                  let title =
-                        if line = 0
-                        then UINode.(text ~cursor:chr Normal title)
-                        else UINode.(text Normal title)
-                  in 
+                  let title = image_of_title chr line title in 
                   title
             | title :: tags :: [] ->
                   let (chr, line) = pos in
-                  let title =
-                        if line = 0
-                        then UINode.(text ~cursor:chr Normal title)
-                        else UINode.(text Normal title)
-                  in 
-                  let tags = UINode.(text Secondary tags) in
+                  let title = image_of_title chr line title in 
+                  let tags = image_of_tags chr line tags in
                   I.(title <-> tags)
             | title :: tags :: body ->
                   let (chr, line) = pos in
-                  let title =
-                        if line = 0
-                        then UINode.(text ~cursor:chr Normal title)
-                        else UINode.(text Normal title)
-                  in 
-                  let tags = 
-                      if line = 1
-                      then UINode.(text ~cursor:chr Secondary tags)
-                      else UINode.(text Secondary tags)
-                  in
+                  let title = image_of_title chr line title in 
+                  let tags = image_of_tags chr line tags in
                   let divider = UINode.(text Secondary "-----") in
-                  let body =
-                        body
-                        |> List.mapi (fun index str ->
-                              if index + 2 = line
-                              then UINode.(text ~cursor:chr Normal str)
-                              else UINode.(text Normal str)
-                        )
-                        |> I.vcat
-                  in
+                  let body = image_of_body chr line body in
                   I.(title <-> tags <-> divider <-> body)
 end
 

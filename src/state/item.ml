@@ -15,3 +15,5 @@ let has_tag tag t =
       t.tags
       |> List.exists @@ (=) tag
 
+let eq a b = a.title = b.title
+
