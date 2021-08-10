@@ -49,7 +49,7 @@ module DetailState = struct
 end
 
 type navigation_msg =
-      | Save of Item.t * Folder.t
+      | Save of Folder.t * Item.t
       | ToDetail
       | ToView
       | Nothing
@@ -78,8 +78,12 @@ let update state msg = match state, msg with
             Detail DetailState.(update (folder, edit_data) msg)
 
       | (_, NavigationMsg msg) -> begin match msg with
-            | Save (item, folder) -> View Folder.(add_items [item] folder)
-            | ToDetail -> Detail ((unwrap_folder state), For_ui.Input.empty)
+            | Save (folder, item) -> View Folder.(add_items [item] folder)
+            | ToDetail ->
+                    let folder = unwrap_folder state in
+                    let (_, selected_item) = Folder.get_selected folder in
+                    let edit_data = For_ui.Input.make @@ Parser.string_of_item selected_item in
+                    Detail (folder, edit_data)
             | ToView -> View (unwrap_folder state)
             | Nothing -> state
             | Quit -> state

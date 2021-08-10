@@ -1,2 +1,3 @@
 (library
-  (name for_ui))
+  (name for_ui)
+  (libraries utils))

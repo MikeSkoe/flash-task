@@ -19,6 +19,27 @@ let strings_of_item item =
       in
       [title;body;tags]
 
+let item_of_string str = match String.split_on_char '\n' str with
+      | [] ->
+            Item.empty
+      | title :: [] ->
+            Item.make title [] ""
+      | title :: tags :: [] ->
+            let tags = tags |> String.split_on_char ',' in
+            Item.make title List.(map Tag.make tags) ""
+      | title :: tags :: body ->
+            let tags = tags |> String.split_on_char ',' in
+            Item.make title List.(map Tag.make tags) String.(concat "\n" body)
+
+let string_of_item item =
+      let title = Item.get_title item in
+      let body = Item.get_body item in
+      let tags =
+            Item.get_tags item
+            |> List.map Tag.get_title
+            |> String.concat ","
+      in
+      Printf.sprintf "%s\n%s\n%s" title tags body
 
 (* --- TEST --- *)
     

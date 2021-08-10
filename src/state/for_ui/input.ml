@@ -1,3 +1,5 @@
+open Utils
+
 (* TODO:? rewrite to functor with current line as inner value *)
 type t = {
       pos: int * int;
@@ -5,9 +7,11 @@ type t = {
 }
 
 let empty = {
-      pos=(2, 0);
-      data="Empty data";
+      pos=(0, 0);
+      data="Empty data\nbody data";
 }
+
+let make data = { empty with data }
 
 let normalize {pos; data} =
       let chr, line = pos in
@@ -67,14 +71,13 @@ let type_char typed {pos; data} =
             |> String.concat "\n"
       in
       {pos; data}
-      |> shift_cursor (1, 0)
+      |> if typed = '\n' then shift_cursor (-999, 1) else shift_cursor (1, 0)
 
 let del_char {pos; data} =
       let chr, line = pos in
-      let data =
-            data
-            |> String.split_on_char '\n'
-            |> List.mapi (fun index str ->
+      let lines = String.split_on_char '\n' data in
+      let rem_chr =
+            List.mapi (fun index str ->
                   if index = line
                   then
                         let (before, curr, after) = split_on_pos chr str in
@@ -86,8 +89,23 @@ let del_char {pos; data} =
                         Printf.sprintf "%s%s%s" before curr after
                   else str
             )
-            |> String.concat "\n"
+            >> String.concat "\n"
+      in
+      let rem_line =
+            List.fold_left2 (fun acc index curr ->
+                match index with
+                | 0 -> curr
+                | index when index = line -> acc ^ curr
+                | _ -> acc ^ "\n" ^ curr
+            ) "" List.(init (length lines) (fun num -> num))
+      in
+      let data =
+            lines
+            |> if chr = 0 then rem_line else rem_chr
       in
       {pos; data}
-      |> shift_cursor (-1, 0)
+      |> shift_cursor @@
+            if chr = 0
+            then (int_of_float infinity, -1)
+            else (-1, int_of_float infinity)
 
