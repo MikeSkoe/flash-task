@@ -12,16 +12,20 @@ module ViewState = struct
             | PrevItem
             | NextFilter
             | PrevFilter
+            | DeleteItem of Item.t
+            | DeleteFilter of Filter.t
 
       let update folder = function
             | NextItem -> Folder.(next_item folder)
             | PrevItem -> Folder.(prev_item folder)
             | NextFilter -> Folder.(next_filter folder)
             | PrevFilter -> Folder.(prev_filter folder)
+            | DeleteItem item -> Folder.(delete_items [item] folder)
+            | DeleteFilter filter -> Folder.(delete_filters [filter] folder)
 end
 
 module DetailState = struct
-      type t = Folder.t * For_ui.Input.t
+      type t = Folder.t * For_ui.Textarea.t
 
       type msg =
             | NextItem
@@ -38,19 +42,19 @@ module DetailState = struct
                   let folder = Folder.prev_item folder in
                   (folder, edit_data)
             | ShiftCursor (shift_x, shift_y) ->
-                  let edit_data = For_ui.Input.(shift_cursor (shift_x, shift_y) edit_data) in
+                  let edit_data = For_ui.Textarea.(shift_cursor (shift_x, shift_y) edit_data) in
                   (folder, edit_data)
             | TypeChar chr ->
-                  let edit_data = For_ui.Input.type_char chr edit_data in
+                  let edit_data = For_ui.Textarea.type_char chr edit_data in
                   (folder, edit_data)
             | DelChar ->
-                  let edit_data = For_ui.Input.del_char edit_data in
+                  let edit_data = For_ui.Textarea.del_char edit_data in
                   (folder, edit_data)
 end
 
 type navigation_msg =
       | Save of Folder.t * Item.t
-      | ToDetail
+      | ToDetail of Item.t
       | ToView
       | Nothing
       | Quit
@@ -79,11 +83,10 @@ let update state msg = match state, msg with
 
       | (_, NavigationMsg msg) -> begin match msg with
             | Save (folder, item) -> View Folder.(add_items [item] folder)
-            | ToDetail ->
-                    let folder = unwrap_folder state in
-                    let (_, selected_item) = Folder.get_selected folder in
-                    let edit_data = For_ui.Input.make @@ Parser.string_of_item selected_item in
-                    Detail (folder, edit_data)
+            | ToDetail item ->
+                  let folder = unwrap_folder state in
+                  let edit_data = For_ui.Textarea.make @@ Parser.string_of_item item in
+                  Detail (folder, edit_data)
             | ToView -> View (unwrap_folder state)
             | Nothing -> state
             | Quit -> state
@@ -101,7 +104,7 @@ let of_file filename =
                   Filter.(make "---filter #tag3" [WithTag Tag.(make "tag3")]);
             ])
 
-let debug = Detail Folder.(empty, For_ui.Input.empty)
+let debug = Detail Folder.(empty, For_ui.Textarea.empty)
 
 let to_file filename state =
       Filter.empty

@@ -22,7 +22,7 @@ module UINode = struct
 
       let editable cursor style str =
             let style = convert_style style in
-            let (before, curr, after) = For_ui.Input.split_on_pos cursor str in
+            let (before, curr, after) = For_ui.Textarea.split_on_pos cursor str in
             let before = I.string style before in
             let curr = I.string (convert_style Selected) curr in
             let after = I.string style after in
@@ -88,7 +88,7 @@ module UIViewPage = struct
 end
 
 module UIDetailPage = struct
-      let draw _folder ({pos; data} : For_ui.Input.t) = 
+      let draw _folder ({pos; data} : For_ui.Textarea.t) = 
             let image_of_title chr = function
                   | 0 -> UINode.(editable chr Normal)
                   | _ -> UINode.(text Normal)
@@ -108,11 +108,13 @@ module UIDetailPage = struct
             match String.split_on_char '\n' data with
             | [] ->
                   I.empty
-            | title :: [] ->
+            | title :: []
+            | title :: "" :: [] ->
                   let (chr, line) = pos in
                   let title = image_of_title chr line title in 
                   title
-            | title :: tags :: [] ->
+            | title :: tags :: []
+            | title :: tags :: "" :: [] ->
                   let (chr, line) = pos in
                   let title = image_of_title chr line title in 
                   let tags = image_of_tags chr line tags in
@@ -129,11 +131,8 @@ end
 (* --- *)
 
 let draw_view folder =
-      let (width, height) = Notty_unix.Term.size term in
-      let view =
-            UIViewPage.draw folder width
-            |> I.vsnap ~align:`Top (height / 4)
-      in
+      let (width, _) = Notty_unix.Term.size term in
+      let view = UIViewPage.draw folder width in
       Notty_unix.Term.image term view;
 
       match Notty_unix.Term.event term with
@@ -141,9 +140,15 @@ let draw_view folder =
             | `Key (`Arrow `Down, _) -> ViewMsg NextItem
             | `Key (`Arrow `Left, _) -> ViewMsg PrevFilter
             | `Key (`Arrow `Right, _) -> ViewMsg NextFilter
+            | `Key (`Backspace, _) -> 
+                  let (_, selected_item) = Folder.get_selected folder in
+                  ViewMsg (DeleteItem selected_item)
 
+            | `Key (`ASCII ' ', _) -> NavigationMsg (ToDetail Item.empty)
+            | `Key (`Enter, _) -> 
+                  let (_, selected_item) = Folder.get_selected folder in
+                  NavigationMsg (ToDetail selected_item)
             | `Key (`Escape, _) -> NavigationMsg Quit
-            | `Key (`Enter, _) -> NavigationMsg ToDetail
             | _ -> NavigationMsg Nothing
 
 let draw_detail folder edit_data =

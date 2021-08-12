@@ -1,1 +1,1 @@
-module Input = Input
+module Textarea = Textarea

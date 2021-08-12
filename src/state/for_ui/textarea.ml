@@ -2,31 +2,44 @@ open Utils
 
 (* TODO:? rewrite to functor with current line as inner value *)
 type t = {
-      chr: int;
-      text: string;
+      pos: int * int;
+      data: string;
 }
 
 let empty = {
-      chr=0;
-      text="";
+      pos=(0, 0);
+      data="";
 }
 
-let make text = { empty with text }
+let make data = { empty with data }
 
-let normalize {chr; text} =
-      let width = String.length text in
+let normalize {pos; data} =
+      let chr, line = pos in
+      let strings = String.split_on_char '\n' data in
+      let height = List.(length strings) - 1 in
+      let line =
+            line
+            |> max 0
+            |> min height
+      in
+      let curr_string = List.nth strings line in
+      let width = String.length curr_string in
       let chr =
             chr
             |> max 0
             |> min width
       in
-      {chr; text}
+      {pos=(chr, line); data}
 
-let shift_cursor shift_x t =
-      { t with chr=t.chr + shift_x }
+let shift_cursor (shift_x, shift_y) t =
+      let (pos_x, pos_y) = t.pos in
+      {
+            t with
+            pos=pos_x + shift_x, pos_y + shift_y
+      }
       |> normalize
 
-let split_on_pos chr str =
+let split_on_pos pos str =
       let len = String.length str in
       let after_len = len - pos - 1 in
       let before = String.sub str 0 pos in
@@ -43,7 +56,7 @@ let split_on_pos chr str =
       in
       (before, curr, after)
 
-let type_char typed {chr; text} =
+let type_char typed {pos; data} =
       let chr, line = pos in
       let data =
             data

@@ -53,6 +53,20 @@ let add_filters filters t =
       let filters = filters @ t.filters in
       select_first { t with filters }
 
+let delete_items items t =
+      let items =
+            t.items
+            |> List.filter (fun item -> not (List.mem item items))
+      in
+      select_first { t with items }
+
+let delete_filters filters t =
+      let filters =
+            t.filters
+            |> List.filter (fun filter -> not (List.mem filter filters))
+      in
+      select_first { t with filters }
+
 let shift_selected take_left selected lst =
       let rec iter = function
             | left :: right :: tail ->

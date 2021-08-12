@@ -1,1 +1,1 @@
-sudo dune build @install @runtest --watch $@
+sudo dune build --watch

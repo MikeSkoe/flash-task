@@ -5,7 +5,7 @@ type t = {
 }
 
 let make title tags body = { title; tags; body } 
-let empty = make "add new" [] ""
+let empty = make "" [] ""
 
 let get_title {title; _} = title
 let get_tags {tags; _} = tags
