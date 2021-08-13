@@ -53,6 +53,46 @@ let string_of_item item =
       in
       Printf.sprintf "%s\n%s\n%s" title tags body
 
+let string_of_rule = function
+      | Filter.All -> "*"
+      | Filter.WithoutTags -> "-"
+      | Filter.OptTag rule_items ->
+            rule_items
+            |> List.map (fun (Filter.WithTag tag) -> Printf.sprintf "+%s" Tag.(get_title tag))
+            |> String.concat ","
+
+let rule_of_string = function
+      | "*" -> Filter.All
+      | "-" -> Filter.WithoutTags
+      | rule_items -> 
+            rule_items
+            |> String.split_on_char ','
+            |> List.map (
+                  String.to_seq
+                  >> List.of_seq
+                  >> (function
+                     | '+' :: tail ->
+                           let tail = List.to_seq tail |> String.of_seq in
+                           Filter.WithTag Tag.(make tail)
+                     | _ -> Filter.WithTag Tag.(make ""))
+            )
+            |> (fun rule_items -> Filter.OptTag rule_items)
+
+let string_of_filter filter =
+    let title = Filter.get_name filter in
+    let rule =
+          Filter.get_rule filter
+          |> string_of_rule 
+    in
+    String.concat "\n" [title; rule]
+
+let filter_of_string str = match String.split_on_char '\n' str with
+      | [] -> Filter.empty
+      | title :: [] -> Filter.(make title All)
+      | title :: rule :: _ ->
+            let rule = rule_of_string rule in
+            Filter.make title rule
+
 (* --- TEST --- *)
     
       (*

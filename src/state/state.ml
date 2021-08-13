@@ -100,8 +100,8 @@ let of_file filename =
       in
       View Folder.(add_items items empty
             |> add_filters @@ [
-                  Filter.(make "---filter #tag" [WithTag Tag.(make "tag")]);
-                  Filter.(make "---filter #tag3" [WithTag Tag.(make "tag3")]);
+                  Filter.(make "---filter #tag" (OptTag [WithTag Tag.(make "tag")]));
+                  Filter.(make "---filter #tag3" (OptTag [WithTag Tag.(make "tag3")]));
             ])
 
 let debug = Detail Folder.(empty, For_ui.Textarea.empty)

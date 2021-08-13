@@ -70,7 +70,13 @@ module UIFilter = struct
                   Filter.get_name filter
                   |> UINode.(text (if is_selected then Underline else Normal))
             in
-            I.(title <-> items)
+            let rule =
+                  Filter.get_rule filter
+                  |> Parser.string_of_rule
+                  |> UINode.(text Secondary)
+                  |> I.pad ~b:1
+            in
+            I.(title <-> rule <-> items)
 end
 
 module UIViewPage = struct

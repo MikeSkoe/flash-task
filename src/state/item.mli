@@ -8,5 +8,6 @@ val get_title : t -> string
 val get_body : t -> string
 
 val has_tag : Tag.t -> t -> bool
+val has_no_tag : t -> bool
 val eq : t -> t -> bool
 
