@@ -7,28 +7,17 @@ type rule =
     | OptTag of rule_item list
 
 type t = {
-    name: string;
+    title: string;
     rule: rule;
 }
 
-let make_rule = function
-    | "-" -> WithoutTags
-    | "*" -> All
-    | str -> 
-        let strings = String.split_on_char ',' str in
-        let rule_items =
-            strings
-            |> List.map (fun str -> WithTag Tag.(make str))
-        in
-        OptTag rule_items
-
-let make name rule = { name; rule }
+let make title rule = { title; rule }
 let empty = {
-    name="---all items";
+    title="all items";
     rule=All;
 }
 
-let get_name {name; _} = name
+let get_title {title; _} = title
 let get_rule {rule; _} = rule
 
 let return_true _ = true
@@ -43,6 +32,5 @@ let is_suitable = function
         in
         (fun item -> List.fold_left (fold item) false rule_items)
 
-let filter t items = 
-    List.filter (is_suitable t.rule) items
+let filter t items = List.filter (is_suitable t.rule) items
 

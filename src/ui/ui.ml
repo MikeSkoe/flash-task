@@ -67,7 +67,7 @@ module UIFilter = struct
                   |> I.vcat 
             in
             let title =
-                  Filter.get_name filter
+                  Filter.get_title filter
                   |> UINode.(text (if is_selected then Underline else Normal))
             in
             let rule =

@@ -79,7 +79,7 @@ let rule_of_string = function
             |> (fun rule_items -> Filter.OptTag rule_items)
 
 let string_of_filter filter =
-    let title = Filter.get_name filter in
+    let title = Filter.get_title filter in
     let rule =
           Filter.get_rule filter
           |> string_of_rule 
