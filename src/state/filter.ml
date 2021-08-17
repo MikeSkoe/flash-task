@@ -32,5 +32,7 @@ let is_suitable = function
         in
         (fun item -> List.fold_left (fold item) false rule_items)
 
-let filter t items = List.filter (is_suitable t.rule) items
+let apply t items = List.filter (is_suitable t.rule) items
+
+let eq = (=)
 

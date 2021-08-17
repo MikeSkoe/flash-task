@@ -14,5 +14,6 @@ val empty : t
 val get_title : t -> string
 val get_rule : t -> rule
 
-val filter : t -> Item.t list -> Item.t list
+val apply : t -> Item.t list -> Item.t list
+val eq : t -> t -> bool
 

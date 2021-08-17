@@ -44,26 +44,33 @@ module UITag = struct
 end
 
 module UIItem = struct
-      let draw selected_item item =
+      let draw is_folder_selected selected item =
             let tags =
                   Item.get_tags item
                   |> List.map UITag.draw
                   |> I.hcat
             in
+            let style = match (is_folder_selected, selected) with
+                  | (true, Selected.Item (_, selected_item)) when selected_item = item -> UINode.Selected
+                  | _ -> UINode.Normal
+            in
             let title =
                   Item.get_title item
-                  |> UINode.(text (if selected_item = item then Selected else Normal))
+                  |> UINode.(text style)
             in
             I.(title <-> tags)
 end
 
 module UIFilter = struct
-      let draw folder filter =
-            let (selected_filter, selected_item) = Folder.get_selected folder in
-            let is_selected = selected_filter = filter in
+      let draw folder selected filter =
+            let is_selected = match selected with
+                  | Selected.Filter selected_filter when selected_filter = filter -> true
+                  | Selected.Item (selected_filter, _) when selected_filter = filter -> true
+                  | _ -> false
+            in
             let items =
                   Folder.get_items folder filter
-                  |> List.map @@ UIItem.draw (if is_selected then selected_item else Item.empty)
+                  |> List.map @@ UIItem.draw is_selected selected
                   |> I.vcat 
             in
             let title =
@@ -80,11 +87,11 @@ module UIFilter = struct
 end
 
 module UIViewPage = struct
-      let draw folder width = 
+      let draw folder selected width = 
             let filters =
                   Folder.get_filters folder
                   |> List.map @@ (
-                        UIFilter.draw folder
+                        UIFilter.draw folder selected
                         >> I.hsnap ~align:`Left (width / 3)
                         >> I.pad ~r:3
                   )
@@ -136,9 +143,9 @@ end
 
 (* --- *)
 
-let draw_view folder =
+let draw_view folder selected =
       let (width, _) = Notty_unix.Term.size term in
-      let view = UIViewPage.draw folder width in
+      let view = UIViewPage.draw folder selected width in
       Notty_unix.Term.image term view;
 
       match Notty_unix.Term.event term with
@@ -147,13 +154,18 @@ let draw_view folder =
             | `Key (`Arrow `Left, _) -> ViewMsg PrevFilter
             | `Key (`Arrow `Right, _) -> ViewMsg NextFilter
             | `Key (`Backspace, _) -> 
-                  let (_, selected_item) = Folder.get_selected folder in
-                  ViewMsg (DeleteItem selected_item)
-
+                  begin match selected with
+                  | Selected.Item (_, selected_item) ->
+                        ViewMsg (DeleteItem selected_item)
+                  | _ -> NavigationMsg Nothing
+                  end
             | `Key (`ASCII ' ', _) -> NavigationMsg (ToDetail Item.empty)
             | `Key (`Enter, _) -> 
-                  let (_, selected_item) = Folder.get_selected folder in
-                  NavigationMsg (ToDetail selected_item)
+                  begin match selected with
+                  | Selected.Item (_, selected_item) -> 
+                        NavigationMsg (ToDetail selected_item)
+                  | _ -> NavigationMsg Nothing
+                  end
             | `Key (`Escape, _) -> NavigationMsg Quit
             | _ -> NavigationMsg Nothing
 
@@ -178,6 +190,6 @@ let draw_detail folder edit_data =
             | _ -> NavigationMsg Nothing
 
 let draw = function
-      | View folder -> draw_view folder
+      | View (folder, selected) -> draw_view folder selected
       | Detail (folder, edit_data) -> draw_detail folder edit_data
 
