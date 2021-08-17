@@ -18,6 +18,7 @@ let get_id {id; _} = id
 
 (* Setters *)
 let set_id id t = {t with id}
+let set_tags tags t = {t with tags}
 
 (* Checkers *)
 let has_tag tag = get_tags >> List.exists @@ (=) tag

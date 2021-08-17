@@ -159,7 +159,23 @@ let draw_view folder selected =
                         ViewMsg (DeleteItem selected_item)
                   | _ -> NavigationMsg Nothing
                   end
-            | `Key (`ASCII ' ', _) -> NavigationMsg (ToDetail Item.empty)
+            | `Key (`ASCII ' ', _) ->
+                  let filter = match selected with
+                        | Selected.Item (selected_filter, _) -> selected_filter
+                        | Selected.Filter selected_filter -> selected_filter
+                  in
+                  let tags = match Filter.get_rule filter with
+                        | Filter.WithoutTags -> []
+                        | Filter.All -> []
+                        | Filter.OptTag rule_items ->
+                              List.fold_left (fun tags rule_item ->
+                                    begin match rule_item with
+                                    | Filter.WithTag tag -> tags @ [tag]
+                                    end
+                              ) [] rule_items
+                  in
+                  let item = Item.(set_tags tags empty) in
+                  NavigationMsg (ToDetail item)
             | `Key (`Enter, _) -> 
                   begin match selected with
                   | Selected.Item (_, selected_item) -> 
