@@ -24,7 +24,7 @@ let shift_cursor shift_x t =
       { t with chr=t.chr + shift_x }
       |> normalize
 
-let split_on_pos chr str =
+let split_on_pos pos str =
       let len = String.length str in
       let after_len = len - chr - 1 in
       let before = String.sub str 0 chr in
