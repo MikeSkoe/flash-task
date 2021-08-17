@@ -169,13 +169,16 @@ let draw_view folder selected =
             | `Key (`Escape, _) -> NavigationMsg Quit
             | _ -> NavigationMsg Nothing
 
-let draw_detail folder edit_data =
+let draw_detail folder edit_data id =
       let view = UIDetailPage.draw folder edit_data in
       Notty_unix.Term.image term view;
 
       match Notty_unix.Term.event term with
             | `Key (`Tab, _) -> 
-                    let item = Parser.item_of_string edit_data.data in
+                    let item =
+                          Parser.item_of_string edit_data.data
+                          |> Item.set_id id
+                    in
                     NavigationMsg (Save (folder, item))
 
             | `Key (`Arrow `Left, _) -> DetailMsg (ShiftCursor (-1, 0))
@@ -191,5 +194,5 @@ let draw_detail folder edit_data =
 
 let draw = function
       | View (folder, selected) -> draw_view folder selected
-      | Detail (folder, edit_data) -> draw_detail folder edit_data
+      | Detail (folder, edit_data, id) -> draw_detail folder edit_data id
 

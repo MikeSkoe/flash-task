@@ -12,10 +12,12 @@ let empty = make "" [] ""
 
 (* Getters *)
 let get_title {title; _} = title
-
 let get_tags {tags; _} = tags
-
 let get_body {body; _} = body
+let get_id {id; _} = id
+
+(* Setters *)
+let set_id id t = {t with id}
 
 (* Checkers *)
 let has_tag tag = get_tags >> List.exists @@ (=) tag
