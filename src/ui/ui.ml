@@ -62,14 +62,16 @@ module UIItem = struct
 end
 
 module UIFilter = struct
-      let draw folder selected filter =
+      let draw folder filter =
+            let selected = Folder.get_selected folder in
             let is_selected = match selected with
                   | Selected.Filter selected_filter when selected_filter = filter -> true
                   | Selected.Item (selected_filter, _) when selected_filter = filter -> true
                   | _ -> false
             in
             let items =
-                  Folder.get_items folder filter
+                  Folder.get_items folder
+                  |> Filter.apply filter
                   |> List.map @@ UIItem.draw is_selected selected
                   |> I.vcat 
             in
@@ -87,11 +89,11 @@ module UIFilter = struct
 end
 
 module UIViewPage = struct
-      let draw folder selected width = 
+      let draw folder width = 
             let filters =
                   Folder.get_filters folder
                   |> List.map @@ (
-                        UIFilter.draw folder selected
+                        UIFilter.draw folder
                         >> I.hsnap ~align:`Left (width / 3)
                         >> I.pad ~r:3
                   )
@@ -143,9 +145,9 @@ end
 
 (* --- *)
 
-let draw_view folder selected =
+let draw_view folder =
       let (width, _) = Notty_unix.Term.size term in
-      let view = UIViewPage.draw folder selected width in
+      let view = UIViewPage.draw folder width in
       Notty_unix.Term.image term view;
 
       match Notty_unix.Term.event term with
@@ -154,13 +156,13 @@ let draw_view folder selected =
             | `Key (`Arrow `Left, _) -> ViewMsg PrevFilter
             | `Key (`Arrow `Right, _) -> ViewMsg NextFilter
             | `Key (`Backspace, _) -> 
-                  begin match selected with
+                  begin match Folder.get_selected folder with
                   | Selected.Item (_, selected_item) ->
                         ViewMsg (DeleteItem selected_item)
                   | _ -> NavigationMsg Nothing
                   end
             | `Key (`ASCII ' ', _) ->
-                  let filter = match selected with
+                  let filter = match Folder.get_selected folder with
                         | Selected.Item (selected_filter, _) -> selected_filter
                         | Selected.Filter selected_filter -> selected_filter
                   in
@@ -175,24 +177,24 @@ let draw_view folder selected =
                               ) [] rule_items
                   in
                   let item = Item.(make "" tags "") in
-                  let edit_data = DetailState.NewItem For_ui.Textarea.(make @@ Parser.string_of_item item) in
-                  NavigationMsg (ToDetail (folder, selected, edit_data))
+                  let edit_data = DetailState.EditData.NewItem For_ui.Textarea.(make @@ Parser.string_of_item item) in
+                  NavigationMsg (ToDetail (folder, edit_data))
             | `Key (`Enter, _) -> 
-                  begin match selected with
+                  begin match Folder.get_selected folder with
                   | Selected.Item (_, selected_item) -> 
                         let id = Item.(get_id selected_item) in
                         let textarea = For_ui.Textarea.(make @@ Parser.string_of_item selected_item) in
-                        let edit_data = DetailState.ExistingItem (id, textarea) in
-                        NavigationMsg (ToDetail (folder, selected, edit_data))
+                        let edit_data = DetailState.EditData.ExistingItem (id, textarea) in
+                        NavigationMsg (ToDetail (folder, edit_data))
                   | _ -> NavigationMsg Nothing
                   end
             | `Key (`Escape, _) -> NavigationMsg Quit
             | _ -> NavigationMsg Nothing
 
-let draw_detail folder _selected edit_data =
+let draw_detail folder edit_data =
       let textarea = match edit_data with
-      | DetailState.NewItem textarea -> textarea
-      | DetailState.ExistingItem (_, textarea) -> textarea
+      | DetailState.EditData.NewItem textarea -> textarea
+      | DetailState.EditData.ExistingItem (_, textarea) -> textarea
       in
       let view = UIDetailPage.draw folder textarea in
       Notty_unix.Term.image term view;
@@ -210,10 +212,10 @@ let draw_detail folder _selected edit_data =
 
             | `Key (`Tab, _) -> 
                     let item = match edit_data with
-                        | DetailState.ExistingItem (id, textarea) -> 
+                        | DetailState.EditData.ExistingItem (id, textarea) -> 
                                 Parser.item_of_string textarea.data
                                 |> Item.set_id id
-                        | DetailState.NewItem textarea -> 
+                        | DetailState.EditData.NewItem textarea -> 
                                 Parser.item_of_string textarea.data
                     in
                     NavigationMsg (Save (folder, item))
@@ -221,6 +223,6 @@ let draw_detail folder _selected edit_data =
             | _ -> NavigationMsg Nothing
 
 let draw = function
-      | View (folder, selected) -> draw_view folder selected
-      | Detail (folder, selected, edit_data) -> draw_detail folder selected edit_data
+      | View folder -> draw_view folder
+      | Detail (folder, edit_data) -> draw_detail folder edit_data
 

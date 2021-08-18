@@ -6,7 +6,7 @@ module Parser = Parser
 module Selected = Selected
 
 module ViewState = struct
-      type t = Folder.t * Selected.t
+      type t = Folder.t
 
       type msg = 
             | NextItem
@@ -16,22 +16,28 @@ module ViewState = struct
             | DeleteItem of Item.t
             | DeleteFilter of Filter.t
 
-      let update (folder, selected) = function
-            | DeleteItem item -> (Folder.(delete_items [item] folder), selected)
-            | DeleteFilter filter -> (Folder.(delete_filters [filter] folder), selected)
+      let update folder = function
+            | DeleteItem item -> Folder.(delete_items [item] folder)
+            | DeleteFilter filter -> Folder.(delete_filters [filter] folder)
 
-            | NextFilter -> (folder, Selected.shift_filter folder 1 selected)
-            | PrevFilter -> (folder, Selected.shift_filter folder (-1) selected)
-            | NextItem -> (folder, Selected.shift_item folder 1 selected)
-            | PrevItem -> (folder, Selected.shift_item folder (-1) selected)
+            | NextFilter -> Folder.shift_filter 1 folder
+            | PrevFilter -> Folder.shift_filter (-1) folder
+            | NextItem -> Folder.shift_item 1 folder
+            | PrevItem -> Folder.shift_item (-1) folder
 end
 
 module DetailState = struct
-      type edit_data =
-            | NewItem of For_ui.Textarea.t
-            | ExistingItem of Item.t Id.t * For_ui.Textarea.t
+      module EditData = struct
+            type t =
+                  | NewItem of For_ui.Textarea.t
+                  | ExistingItem of Item.t Id.t * For_ui.Textarea.t
 
-      type t = Folder.t * Selected.t * edit_data
+            let map fn = function
+                  | NewItem textarea -> NewItem (fn textarea)
+                  | ExistingItem (id, textarea) -> ExistingItem (id, (fn textarea)) 
+      end
+
+      type t = Folder.t * EditData.t
 
       type msg =
             | NextItem
@@ -40,32 +46,32 @@ module DetailState = struct
             | TypeChar of char
             | DelChar
 
-      let update (folder, selected, edit_data) = function
-            | NextItem -> (folder, selected, edit_data)
-            | PrevItem -> (folder, selected, edit_data)
+      let update folder edit_data = function
+            | NextItem -> (folder, edit_data)
+            | PrevItem -> (folder, edit_data)
             | ShiftCursor (shift_x, shift_y) ->
-                  let edit_data = match edit_data with
-                  | NewItem textarea -> NewItem For_ui.Textarea.(shift_cursor (shift_x, shift_y) textarea)
-                  | ExistingItem (id, textarea) -> ExistingItem (id, For_ui.Textarea.(shift_cursor (shift_x, shift_y) textarea)) 
+                  let edit_data =
+                        edit_data
+                        |> EditData.map For_ui.Textarea.(shift_cursor (shift_x, shift_y))
                   in
-                  (folder, selected, edit_data)
+                  (folder, edit_data)
             | TypeChar chr ->
-                  let edit_data = match edit_data with
-                  | NewItem textarea -> NewItem For_ui.Textarea.(type_char chr textarea)
-                  | ExistingItem (id, textarea) -> ExistingItem (id, For_ui.Textarea.type_char chr textarea)
+                  let edit_data =
+                        edit_data
+                        |> EditData.map For_ui.Textarea.(type_char chr)
                   in
-                  (folder, selected, edit_data)
+                  (folder, edit_data)
             | DelChar ->
-                  let edit_data = match edit_data with
-                  | NewItem textarea -> NewItem For_ui.Textarea.(del_char textarea)
-                  | ExistingItem (id, textarea) -> ExistingItem (id, For_ui.Textarea.del_char textarea)
+                  let edit_data =
+                        edit_data
+                        |> EditData.map For_ui.Textarea.del_char 
                   in
-                  (folder, selected, edit_data)
+                  (folder, edit_data)
 end
 
 type navigation_msg =
       | Save of Folder.t * Item.t
-      | ToDetail of (Folder.t * Selected.t * DetailState.edit_data)
+      | ToDetail of (Folder.t * DetailState.EditData.t)
       | ToView
       | Nothing
       | Quit
@@ -79,27 +85,27 @@ type t =
       | View of ViewState.t
       | Detail of DetailState.t
 
-let empty = View (Folder.empty, Selected.empty)
+let empty = View Folder.empty
 
 let unwrap_folder = function
-      | View (folder, _) -> folder
-      | Detail (folder, _, _) -> folder
+      | View folder -> folder
+      | Detail (folder, _) -> folder
 
 let unwrap_selected = function
-      | View (_, selected) -> selected
-      | Detail (_, selected, _) -> selected
+      | View folder -> Folder.get_selected folder
+      | Detail (folder, _) -> Folder.get_selected folder
 
 let update state msg = match state, msg with
-      | (View (folder, filter), ViewMsg msg) ->
-            View ViewState.(update (folder, filter) msg)
+      | (View folder, ViewMsg msg) ->
+            View ViewState.(update folder msg)
 
-      | (Detail (folder, selected, edit_data), DetailMsg msg) ->
-            Detail DetailState.(update (folder, selected, edit_data) msg)
+      | (Detail (folder, edit_data), DetailMsg msg) ->
+            Detail DetailState.(update folder edit_data msg)
 
       | (_, NavigationMsg msg) -> begin match msg with
-            | Save (folder, item) -> View (Folder.(add_items [item] folder), Selected.empty)
-            | ToDetail (folder, selected, edit_data) -> Detail (folder, selected, edit_data)
-            | ToView -> View (unwrap_folder state, Selected.empty)
+            | Save (folder, item) -> View Folder.(add_items [item] folder)
+            | ToDetail (folder, edit_data) -> Detail (folder, edit_data)
+            | ToView -> View (unwrap_folder state)
             | Nothing -> state
             | Quit -> state
       end

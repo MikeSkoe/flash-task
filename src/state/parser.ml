@@ -105,7 +105,7 @@ let of_file filename =
             ])
 
 let to_file filename folder =
-      Folder.get_items folder Filter.empty
+      Folder.get_items folder
       |> List.map strings_of_item
       |> Csv.save filename
 
