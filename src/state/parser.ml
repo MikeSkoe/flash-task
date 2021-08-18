@@ -93,30 +93,19 @@ let filter_of_string str = match String.split_on_char '\n' str with
             let rule = rule_of_string rule in
             Filter.make title rule
 
-(* --- TEST --- *)
-    
-      (*
-let strings_1 = ["first title"; "first description"; "first tag\nanother tag\nlearn"]
-let strings_2 = ["second title"; "second description"; "single tags"]
-let strings_3 = ["third title"; "third description"; ""]
-
-let item_1 = Item.make "first title" List.(["first tag";"another tag";"learn"] |> map Tag.make) "first description"
-let item_2 = Item.make "second title" List.(["single tags"] |> map Tag.make) "second description"
-let item_3 = Item.make "third title" [] "third description"
-
-let%test "\n--- [PARSER] strings to items\n" =
+let of_file filename =
       let items =
-            [strings_1;strings_2;strings_3]
+            Csv.load filename
             |> List.map item_of_strings
       in
-      let expected = [item_1;item_2;item_3] in
-      items = expected
+      Folder.(add_items items empty
+            |> add_filters @@ [
+                  Filter.(make "---filter #tag" (OptTag [WithTag Tag.(make "tag")]));
+                  Filter.(make "---filter #tag3" (OptTag [WithTag Tag.(make "tag3")]));
+            ])
 
-let%test "\n--- [PARSER] items to strings\n" =
-      let items =
-            [item_1;item_2;item_3]
-            |> List.map strings_of_item 
-      in
-      let expected = [strings_1;strings_2;strings_3] in
-      items = expected
-      *)
+let to_file filename folder =
+      Folder.get_items folder Filter.empty
+      |> List.map strings_of_item
+      |> Csv.save filename
+

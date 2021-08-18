@@ -65,7 +65,7 @@ end
 
 type navigation_msg =
       | Save of Folder.t * Item.t
-      | ToDetail of DetailState.edit_data
+      | ToDetail of (Folder.t * Selected.t * DetailState.edit_data)
       | ToView
       | Nothing
       | Quit
@@ -85,6 +85,10 @@ let unwrap_folder = function
       | View (folder, _) -> folder
       | Detail (folder, _, _) -> folder
 
+let unwrap_selected = function
+      | View (_, selected) -> selected
+      | Detail (_, selected, _) -> selected
+
 let update state msg = match state, msg with
       | (View (folder, filter), ViewMsg msg) ->
             View ViewState.(update (folder, filter) msg)
@@ -94,35 +98,10 @@ let update state msg = match state, msg with
 
       | (_, NavigationMsg msg) -> begin match msg with
             | Save (folder, item) -> View (Folder.(add_items [item] folder), Selected.empty)
-            | ToDetail edit_data ->
-                  let (folder, selected) = match state with
-                  | View (folder, selected) -> (folder, selected)
-                  | Detail (folder, selected, _) -> (folder, selected)
-                  in
-                  Detail (folder, selected, edit_data)
+            | ToDetail (folder, selected, edit_data) -> Detail (folder, selected, edit_data)
             | ToView -> View (unwrap_folder state, Selected.empty)
             | Nothing -> state
             | Quit -> state
       end
       | _ -> state
-
-let of_file filename =
-      let items =
-            Csv.load filename
-            |> List.map Parser.item_of_strings
-      in
-      View (
-            Folder.(add_items items empty
-                  |> add_filters @@ [
-                        Filter.(make "---filter #tag" (OptTag [WithTag Tag.(make "tag")]));
-                        Filter.(make "---filter #tag3" (OptTag [WithTag Tag.(make "tag3")]));
-                  ])
-            , Selected.empty
-      )
-
-let to_file filename state =
-      Filter.empty
-      |> Folder.get_items @@ unwrap_folder state
-      |> List.map Parser.strings_of_item
-      |> Csv.save filename
 

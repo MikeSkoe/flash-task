@@ -176,14 +176,14 @@ let draw_view folder selected =
                   in
                   let item = Item.(make "" tags "") in
                   let edit_data = DetailState.NewItem For_ui.Textarea.(make @@ Parser.string_of_item item) in
-                  NavigationMsg (ToDetail edit_data)
+                  NavigationMsg (ToDetail (folder, selected, edit_data))
             | `Key (`Enter, _) -> 
                   begin match selected with
                   | Selected.Item (_, selected_item) -> 
                         let id = Item.(get_id selected_item) in
                         let textarea = For_ui.Textarea.(make @@ Parser.string_of_item selected_item) in
                         let edit_data = DetailState.ExistingItem (id, textarea) in
-                        NavigationMsg (ToDetail edit_data)
+                        NavigationMsg (ToDetail (folder, selected, edit_data))
                   | _ -> NavigationMsg Nothing
                   end
             | `Key (`Escape, _) -> NavigationMsg Quit

@@ -12,3 +12,6 @@ val string_of_filter : Filter.t -> string
 val rule_of_string : string -> Filter.rule
 val string_of_rule : Filter.rule -> string
 
+val of_file : string -> Folder.t
+val to_file : string -> Folder.t -> unit
+
