@@ -1,5 +1,3 @@
-open Utils
-
 let memo ?is_equal:(is_eq=(=)) fn =
   let last_arg_res = ref None in
   (fun arg ->

@@ -19,6 +19,7 @@ module ViewState = struct
       let update (folder, selected) = function
             | DeleteItem item -> (Folder.(delete_items [item] folder), selected)
             | DeleteFilter filter -> (Folder.(delete_filters [filter] folder), selected)
+
             | NextFilter -> (folder, Selected.shift_filter folder 1 selected)
             | PrevFilter -> (folder, Selected.shift_filter folder (-1) selected)
             | NextItem -> (folder, Selected.shift_item folder 1 selected)
@@ -26,7 +27,11 @@ module ViewState = struct
 end
 
 module DetailState = struct
-      type t = Folder.t * For_ui.Textarea.t * (Item.t Id.t)
+      type edit_data =
+            | NewItem of For_ui.Textarea.t
+            | ExistingItem of Item.t Id.t * For_ui.Textarea.t
+
+      type t = Folder.t * Selected.t * edit_data
 
       type msg =
             | NextItem
@@ -35,23 +40,32 @@ module DetailState = struct
             | TypeChar of char
             | DelChar
 
-      let update (folder, edit_data, id) = function
-            | NextItem -> (folder, edit_data, id)
-            | PrevItem -> (folder, edit_data, id)
+      let update (folder, selected, edit_data) = function
+            | NextItem -> (folder, selected, edit_data)
+            | PrevItem -> (folder, selected, edit_data)
             | ShiftCursor (shift_x, shift_y) ->
-                  let edit_data = For_ui.Textarea.(shift_cursor (shift_x, shift_y) edit_data) in
-                  (folder, edit_data, id)
+                  let edit_data = match edit_data with
+                  | NewItem textarea -> NewItem For_ui.Textarea.(shift_cursor (shift_x, shift_y) textarea)
+                  | ExistingItem (id, textarea) -> ExistingItem (id, For_ui.Textarea.(shift_cursor (shift_x, shift_y) textarea)) 
+                  in
+                  (folder, selected, edit_data)
             | TypeChar chr ->
-                  let edit_data = For_ui.Textarea.type_char chr edit_data in
-                  (folder, edit_data, id)
+                  let edit_data = match edit_data with
+                  | NewItem textarea -> NewItem For_ui.Textarea.(type_char chr textarea)
+                  | ExistingItem (id, textarea) -> ExistingItem (id, For_ui.Textarea.type_char chr textarea)
+                  in
+                  (folder, selected, edit_data)
             | DelChar ->
-                  let edit_data = For_ui.Textarea.del_char edit_data in
-                  (folder, edit_data, id)
+                  let edit_data = match edit_data with
+                  | NewItem textarea -> NewItem For_ui.Textarea.(del_char textarea)
+                  | ExistingItem (id, textarea) -> ExistingItem (id, For_ui.Textarea.del_char textarea)
+                  in
+                  (folder, selected, edit_data)
 end
 
 type navigation_msg =
       | Save of Folder.t * Item.t
-      | ToDetail of Item.t
+      | ToDetail of DetailState.edit_data
       | ToView
       | Nothing
       | Quit
@@ -75,15 +89,17 @@ let update state msg = match state, msg with
       | (View (folder, filter), ViewMsg msg) ->
             View ViewState.(update (folder, filter) msg)
 
-      | (Detail (folder, edit_data, id), DetailMsg msg) ->
-            Detail DetailState.(update (folder, edit_data, id) msg)
+      | (Detail (folder, selected, edit_data), DetailMsg msg) ->
+            Detail DetailState.(update (folder, selected, edit_data) msg)
 
       | (_, NavigationMsg msg) -> begin match msg with
             | Save (folder, item) -> View (Folder.(add_items [item] folder), Selected.empty)
-            | ToDetail item ->
-                  let folder = unwrap_folder state in
-                  let edit_data = For_ui.Textarea.make @@ Parser.string_of_item item in
-                  Detail (folder, edit_data, Item.(get_id item))
+            | ToDetail edit_data ->
+                  let (folder, selected) = match state with
+                  | View (folder, selected) -> (folder, selected)
+                  | Detail (folder, selected, _) -> (folder, selected)
+                  in
+                  Detail (folder, selected, edit_data)
             | ToView -> View (unwrap_folder state, Selected.empty)
             | Nothing -> state
             | Quit -> state
@@ -103,8 +119,6 @@ let of_file filename =
                   ])
             , Selected.empty
       )
-
-let debug = Detail Folder.(empty, For_ui.Textarea.empty, Item.(get_id empty))
 
 let to_file filename state =
       Filter.empty

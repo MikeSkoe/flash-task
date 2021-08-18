@@ -101,7 +101,7 @@ module UIViewPage = struct
 end
 
 module UIDetailPage = struct
-      let draw _folder ({pos; data} : For_ui.Textarea.t) = 
+      let draw _folder ({pos; data}: For_ui.Textarea.t) = 
             let image_of_title chr = function
                   | 0 -> UINode.(editable chr Normal)
                   | _ -> UINode.(text Normal)
@@ -174,28 +174,31 @@ let draw_view folder selected =
                                     end
                               ) [] rule_items
                   in
-                  let item = Item.(set_tags tags empty) in
-                  NavigationMsg (ToDetail item)
+                  let item = Item.(make "" tags "") in
+                  let edit_data = DetailState.NewItem For_ui.Textarea.(make @@ Parser.string_of_item item) in
+                  NavigationMsg (ToDetail edit_data)
             | `Key (`Enter, _) -> 
                   begin match selected with
                   | Selected.Item (_, selected_item) -> 
-                        NavigationMsg (ToDetail selected_item)
+                        let id = Item.(get_id selected_item) in
+                        let textarea = For_ui.Textarea.(make @@ Parser.string_of_item selected_item) in
+                        let edit_data = DetailState.ExistingItem (id, textarea) in
+                        NavigationMsg (ToDetail edit_data)
                   | _ -> NavigationMsg Nothing
                   end
             | `Key (`Escape, _) -> NavigationMsg Quit
             | _ -> NavigationMsg Nothing
 
-let draw_detail folder edit_data id =
-      let view = UIDetailPage.draw folder edit_data in
+let draw_detail folder _selected edit_data =
+      let textarea = match edit_data with
+      | DetailState.NewItem textarea -> textarea
+      | DetailState.ExistingItem (_, textarea) -> textarea
+      in
+      let view = UIDetailPage.draw folder textarea in
       Notty_unix.Term.image term view;
 
       match Notty_unix.Term.event term with
-            | `Key (`Tab, _) -> 
-                    let item =
-                          Parser.item_of_string edit_data.data
-                          |> Item.set_id id
-                    in
-                    NavigationMsg (Save (folder, item))
+            | `Key (`Arrow `Right, [`Shift]) -> DetailMsg (NextItem)
 
             | `Key (`Arrow `Left, _) -> DetailMsg (ShiftCursor (-1, 0))
             | `Key (`Arrow `Right, _) -> DetailMsg (ShiftCursor (1, 0))
@@ -205,10 +208,19 @@ let draw_detail folder edit_data id =
             | `Key (`Backspace, _) -> DetailMsg DelChar
             | `Key (`Enter, _) -> DetailMsg (TypeChar '\n')
 
+            | `Key (`Tab, _) -> 
+                    let item = match edit_data with
+                        | DetailState.ExistingItem (id, textarea) -> 
+                                Parser.item_of_string textarea.data
+                                |> Item.set_id id
+                        | DetailState.NewItem textarea -> 
+                                Parser.item_of_string textarea.data
+                    in
+                    NavigationMsg (Save (folder, item))
             | `Key (`Escape, _) -> NavigationMsg ToView
             | _ -> NavigationMsg Nothing
 
 let draw = function
       | View (folder, selected) -> draw_view folder selected
-      | Detail (folder, edit_data, id) -> draw_detail folder edit_data id
+      | Detail (folder, selected, edit_data) -> draw_detail folder selected edit_data
 
