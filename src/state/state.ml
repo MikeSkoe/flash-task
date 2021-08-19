@@ -1,10 +1,12 @@
 open Entities
 
 module Parser = Parser
+module DetailState = DetailState
+module ViewState = ViewState
 
 type navigation_msg =
       | Save of Folder.t * Item.t
-      | ToDetail of (Folder.t * EditData.t)
+      | ToDetail of Item.t option
       | ToView
       | Nothing
       | Quit
@@ -20,13 +22,9 @@ type t =
 
 let empty = View Folder.empty
 
-let unwrap_folder = function
+let get_folder = function
       | View folder -> folder
       | Detail (folder, _) -> folder
-
-let unwrap_selected = function
-      | View folder -> Folder.get_selected folder
-      | Detail (folder, _) -> Folder.get_selected folder
 
 let update state msg = match state, msg with
       | (View folder, ViewMsg msg) ->
@@ -37,8 +35,20 @@ let update state msg = match state, msg with
 
       | (_, NavigationMsg msg) -> begin match msg with
             | Save (folder, item) -> View Folder.(add_items [item] folder)
-            | ToDetail (folder, edit_data) -> Detail (folder, edit_data)
-            | ToView -> View (unwrap_folder state)
+            | ToDetail some_item ->
+                  let folder = get_folder state in
+                  let edit_data = match some_item with
+                        | Some item ->
+                              item
+                              |> EditData.of_item 
+                        | None ->
+                              get_folder state
+                              |> Folder.get_selected
+                              |> Selected.get_filter
+                              |> EditData.of_filter 
+                  in
+                  Detail (folder, edit_data)
+            | ToView -> View (get_folder state)
             | Nothing -> state
             | Quit -> state
       end

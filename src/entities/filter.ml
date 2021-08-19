@@ -36,3 +36,10 @@ let apply t items = List.filter (is_suitable t.rule) items
 
 let eq = (=)
 
+let tags_of = function
+      | WithoutTags -> []
+      | All -> []
+      | OptTag rule_items ->
+            rule_items
+            |> List.map (function WithTag tag -> tag) 
+

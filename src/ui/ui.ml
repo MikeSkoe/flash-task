@@ -2,6 +2,7 @@ open Notty
 open Notty_unix
 open Utils
 open Entities
+open State
 
 let term = Term.create ()
 
@@ -51,7 +52,7 @@ module UIItem = struct
                   |> I.hcat
             in
             let style = match (is_folder_selected, selected) with
-                  | (true, Selected.Item (_, selected_item)) when selected_item = item -> UINode.Selected
+                  | (true, Selected.Item (_, selected_item)) when Item.eq selected_item item -> UINode.Selected
                   | _ -> UINode.Normal
             in
             let title =
@@ -65,8 +66,8 @@ module UIFilter = struct
       let draw folder filter =
             let selected = Folder.get_selected folder in
             let is_selected = match selected with
-                  | Selected.Filter selected_filter when selected_filter = filter -> true
-                  | Selected.Item (selected_filter, _) when selected_filter = filter -> true
+                  | Selected.Filter selected_filter when Filter.eq selected_filter filter -> true
+                  | Selected.Item (selected_filter, _) when Filter.eq selected_filter filter -> true
                   | _ -> false
             in
             let items =
@@ -161,31 +162,10 @@ let draw_view folder =
                         ViewMsg (DeleteItem selected_item)
                   | _ -> NavigationMsg Nothing
                   end
-            | `Key (`ASCII ' ', _) ->
-                  let filter = match Folder.get_selected folder with
-                        | Selected.Item (selected_filter, _) -> selected_filter
-                        | Selected.Filter selected_filter -> selected_filter
-                  in
-                  let tags = match Filter.get_rule filter with
-                        | Filter.WithoutTags -> []
-                        | Filter.All -> []
-                        | Filter.OptTag rule_items ->
-                              List.fold_left (fun tags rule_item ->
-                                    begin match rule_item with
-                                    | Filter.WithTag tag -> tags @ [tag]
-                                    end
-                              ) [] rule_items
-                  in
-                  let item = Item.(make "" tags "") in
-                  let edit_data = DetailState.EditData.NewItem For_ui.Textarea.(make @@ Parser.string_of_item item) in
-                  NavigationMsg (ToDetail (folder, edit_data))
+            | `Key (`ASCII ' ', _) -> NavigationMsg (ToDetail None)
             | `Key (`Enter, _) -> 
                   begin match Folder.get_selected folder with
-                  | Selected.Item (_, selected_item) -> 
-                        let id = Item.(get_id selected_item) in
-                        let textarea = For_ui.Textarea.(make @@ Parser.string_of_item selected_item) in
-                        let edit_data = DetailState.EditData.ExistingItem (id, textarea) in
-                        NavigationMsg (ToDetail (folder, edit_data))
+                  | Selected.Item (_, selected_item) -> NavigationMsg (ToDetail (Some selected_item))
                   | _ -> NavigationMsg Nothing
                   end
             | `Key (`Escape, _) -> NavigationMsg Quit
@@ -193,15 +173,14 @@ let draw_view folder =
 
 let draw_detail folder edit_data =
       let textarea = match edit_data with
-      | DetailState.EditData.NewItem textarea -> textarea
-      | DetailState.EditData.ExistingItem (_, textarea) -> textarea
+      | EditData.NewItem textarea -> textarea
+      | EditData.ExistingItem (_, textarea) -> textarea
       in
       let view = UIDetailPage.draw folder textarea in
       Notty_unix.Term.image term view;
 
       match Notty_unix.Term.event term with
             | `Key (`Arrow `Right, [`Shift]) -> DetailMsg (NextItem)
-
             | `Key (`Arrow `Left, _) -> DetailMsg (ShiftCursor (-1, 0))
             | `Key (`Arrow `Right, _) -> DetailMsg (ShiftCursor (1, 0))
             | `Key (`Arrow `Up, _) -> DetailMsg (ShiftCursor (0, -1))
@@ -211,13 +190,7 @@ let draw_detail folder edit_data =
             | `Key (`Enter, _) -> DetailMsg (TypeChar '\n')
 
             | `Key (`Tab, _) -> 
-                    let item = match edit_data with
-                        | DetailState.EditData.ExistingItem (id, textarea) -> 
-                                Parser.item_of_string textarea.data
-                                |> Item.set_id id
-                        | DetailState.EditData.NewItem textarea -> 
-                                Parser.item_of_string textarea.data
-                    in
+                    let item = EditData.item_of edit_data in
                     NavigationMsg (Save (folder, item))
             | `Key (`Escape, _) -> NavigationMsg ToView
             | _ -> NavigationMsg Nothing

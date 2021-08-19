@@ -1,3 +1,3 @@
 (library
   (name ui)
-  (libraries notty notty.unix entities))
+  (libraries notty notty.unix entities state))
