@@ -1,4 +1,5 @@
 open Utils
+open Entities
 
 let item_of_strings = function
       | title :: description :: tags :: _ ->

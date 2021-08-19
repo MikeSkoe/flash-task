@@ -1,7 +1,7 @@
 open Notty
 open Notty_unix
-open State
 open Utils
+open Entities
 
 let term = Term.create ()
 

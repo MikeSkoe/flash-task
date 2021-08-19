@@ -54,7 +54,3 @@ let shift_item shift t =
       let selected = Selected.shift_item (get_items t) shift (get_selected t) in
       { t with selected }
 
-(* --- TEST --- *)
-
-let%test "--- [FOLDER] " = true
-
