@@ -8,11 +8,27 @@ type msg =
     | PrevItem
     | ShiftCursor of int * int
     | TypeChar of char
+    | Save of Item.t
     | DelChar
 
 let update folder edit_data = function
-    | NextItem -> (Folder.shift_item 1 folder, edit_data)
-    | PrevItem -> (Folder.shift_item (-1) folder, edit_data)
+    | NextItem -> 
+            let folder = Folder.shift_item 1 folder in
+            let edit_data =
+                Folder.get_selected folder
+                |> Selected.get_item
+                |> EditData.of_item
+            in
+            (folder, edit_data)
+    | PrevItem ->
+            let folder = Folder.shift_item (-1) folder in
+            let edit_data =
+                Folder.get_selected folder
+                |> Selected.get_item
+                |> EditData.of_item
+            in
+            (folder, edit_data)
+    | Save item -> (Folder.add_items [item] folder, edit_data)
     | ShiftCursor (shift_x, shift_y) ->
           let edit_data =
                 edit_data
@@ -31,3 +47,4 @@ let update folder edit_data = function
                 |> EditData.map Textarea.del_char 
           in
           (folder, edit_data)
+

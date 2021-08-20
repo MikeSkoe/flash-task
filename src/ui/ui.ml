@@ -180,7 +180,8 @@ let draw_detail folder edit_data =
       Notty_unix.Term.image term view;
 
       match Notty_unix.Term.event term with
-            | `Key (`Arrow `Right, [`Shift]) -> DetailMsg (NextItem)
+            | `Key (`Arrow `Right, [`Shift]) -> DetailMsg NextItem
+            | `Key (`Arrow `Left, [`Shift]) -> DetailMsg PrevItem
             | `Key (`Arrow `Left, _) -> DetailMsg (ShiftCursor (-1, 0))
             | `Key (`Arrow `Right, _) -> DetailMsg (ShiftCursor (1, 0))
             | `Key (`Arrow `Up, _) -> DetailMsg (ShiftCursor (0, -1))
@@ -188,10 +189,8 @@ let draw_detail folder edit_data =
             | `Key (`ASCII chr, _) -> DetailMsg (TypeChar chr)
             | `Key (`Backspace, _) -> DetailMsg DelChar
             | `Key (`Enter, _) -> DetailMsg (TypeChar '\n')
+            | `Key (`Tab, _) -> DetailMsg (Save EditData.(item_of edit_data))
 
-            | `Key (`Tab, _) -> 
-                    let item = EditData.item_of edit_data in
-                    NavigationMsg (Save (folder, item))
             | `Key (`Escape, _) -> NavigationMsg ToView
             | _ -> NavigationMsg Nothing
 

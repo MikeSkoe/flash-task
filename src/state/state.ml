@@ -5,7 +5,6 @@ module DetailState = DetailState
 module ViewState = ViewState
 
 type navigation_msg =
-      | Save of Folder.t * Item.t
       | ToDetail of Item.t option
       | ToView
       | Nothing
@@ -34,7 +33,6 @@ let update state msg = match state, msg with
             Detail DetailState.(update folder edit_data msg)
 
       | (_, NavigationMsg msg) -> begin match msg with
-            | Save (folder, item) -> View Folder.(add_items [item] folder)
             | ToDetail some_item ->
                   let folder = get_folder state in
                   let edit_data = match some_item with
