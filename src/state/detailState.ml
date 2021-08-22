@@ -2,8 +2,8 @@ open Entities
 open For_ui
 
 type t =
-      | ItemEdit of (Folder.t * EditData.t)
-      | FilterEdit of (Folder.t * EditData.t)
+      | ItemEdit of (File.t * EditData.t)
+      | FilterEdit of (File.t * EditData.t)
 
 type msg =
       | NextItem
@@ -21,9 +21,9 @@ let map fn = function
 let shift_item shift (folder, edit_data) = match edit_data with
       | EditData.NewItem _ -> (folder, edit_data)
       | EditData.ExistingItem _ ->
-            let folder = Folder.shift_item shift folder in
+            let folder = File.shift_item shift folder in
             let edit_data =
-                  Folder.get_selected folder
+                  File.get_selected folder
                   |> Selected.get_item
                   |> EditData.of_item
             in
@@ -38,8 +38,8 @@ let shift_cursor (shift_x, shift_y) (folder, edit_data) =
       in
       (folder, edit_data)
 
-let save_item item (folder, edit_data) = Folder.add_items [item] folder, edit_data
-let save_filter filter (folder, edit_data) = Folder.add_filters [filter] folder, edit_data
+let save_item item (folder, edit_data) = File.add_items [item] folder, edit_data
+let save_filter filter (folder, edit_data) = File.add_filters [filter] folder, edit_data
 
 let type_char chr (folder, edit_data) = folder, EditData.map Textarea.(type_char chr) edit_data
 

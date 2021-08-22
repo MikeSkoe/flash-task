@@ -39,7 +39,7 @@ let is_suitable = function
 
 let apply t items = List.filter (is_suitable t.rule) items
 
-let eq = (=)
+let eq a b = a.id = b.id
 
 let tags_of = function
       | WithoutTags -> []

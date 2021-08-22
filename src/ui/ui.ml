@@ -64,14 +64,14 @@ end
 
 module UIFilter = struct
       let draw folder filter =
-            let selected = Folder.get_selected folder in
+            let selected = File.get_selected folder in
             let is_selected = match selected with
                   | Selected.Filter selected_filter when Filter.eq selected_filter filter -> true
                   | Selected.Item (selected_filter, _) when Filter.eq selected_filter filter -> true
                   | _ -> false
             in
             let items =
-                  Folder.get_items folder
+                  File.get_items folder
                   |> Filter.apply filter
                   |> List.map @@ UIItem.draw is_selected selected
                   |> I.vcat 
@@ -92,7 +92,7 @@ end
 module UIViewPage = struct
       let draw folder width = 
             let filters =
-                  Folder.get_filters folder
+                  File.get_filters folder
                   |> List.map @@ (
                         UIFilter.draw folder
                         >> I.hsnap ~align:`Left (width / 3)
@@ -144,8 +144,6 @@ module UIDetailPage = struct
                   I.(title <-> tags <-> divider <-> body)
 end
 
-(* --- *)
-
 let draw_view folder =
       let (width, _) = Notty_unix.Term.size term in
       let view = UIViewPage.draw folder width in
@@ -156,20 +154,26 @@ let draw_view folder =
             | `Key (`Arrow `Down, _) -> ViewMsg NextItem
             | `Key (`Arrow `Left, _) -> ViewMsg PrevFilter
             | `Key (`Arrow `Right, _) -> ViewMsg NextFilter
+            | `Key (`Delete, _) -> 
+                  begin match File.get_selected folder with
+                  | Selected.Item (selected_filter, _)
+                  | Selected.Filter selected_filter->
+                        ViewMsg (DeleteFilter selected_filter)
+                  end
             | `Key (`Backspace, _) -> 
-                  begin match Folder.get_selected folder with
+                  begin match File.get_selected folder with
                   | Selected.Item (_, selected_item) ->
                         ViewMsg (DeleteItem selected_item)
                   | _ -> NavigationMsg Nothing
                   end
             | `Key (`ASCII ' ', _) -> NavigationMsg (ToItemDetail None)
             | `Key (`Tab, _) -> 
-                  begin match Folder.get_selected folder with
+                  begin match File.get_selected folder with
                   | Selected.Item (selected_filter, _) -> NavigationMsg (ToFilterDetail (Some selected_filter))
                   | _ -> NavigationMsg (ToFilterDetail None)
                   end
             | `Key (`Enter, _) -> 
-                  begin match Folder.get_selected folder with
+                  begin match File.get_selected folder with
                   | Selected.Item (_, selected_item) -> NavigationMsg (ToItemDetail (Some selected_item))
                   | _ -> NavigationMsg Nothing
                   end

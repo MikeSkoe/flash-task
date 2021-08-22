@@ -20,7 +20,7 @@ type t =
       | View of ViewState.t
       | Detail of DetailState.t
 
-let empty = View Folder.empty
+let empty = View File.empty
 
 let get_folder = function
       | View folder -> folder
@@ -43,7 +43,7 @@ let update state msg = match state, msg with
                               |> EditData.of_item 
                         | None ->
                               get_folder state
-                              |> Folder.get_selected
+                              |> File.get_selected
                               |> Selected.get_filter
                               |> Filter.get_rule 
                               |> EditData.of_rule

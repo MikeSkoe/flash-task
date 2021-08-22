@@ -1,6 +1,6 @@
 open Entities
 
-type t = Folder.t
+type t = File.t
 
 type msg = 
     | NextItem
@@ -11,11 +11,11 @@ type msg =
     | DeleteFilter of Filter.t
 
 let update folder = function
-    | DeleteItem item -> Folder.(delete_items [item] folder)
-    | DeleteFilter filter -> Folder.(delete_filters [filter] folder)
+    | DeleteItem item -> File.(delete_items [item] folder)
+    | DeleteFilter filter -> File.(delete_filters [filter] folder)
 
-    | NextFilter -> Folder.shift_filter 1 folder
-    | PrevFilter -> Folder.shift_filter (-1) folder
-    | NextItem -> Folder.shift_item 1 folder
-    | PrevItem -> Folder.shift_item (-1) folder
+    | NextFilter -> File.shift_filter 1 folder
+    | PrevFilter -> File.shift_filter (-1) folder
+    | NextItem -> File.shift_item 1 folder
+    | PrevItem -> File.shift_item (-1) folder
 

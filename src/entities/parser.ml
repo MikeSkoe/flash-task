@@ -98,14 +98,14 @@ let of_file filename =
             Csv.load filename
             |> List.map item_of_strings
       in
-      Folder.(add_items items empty
+      File.(add_items items empty
             |> add_filters @@ [
                   Filter.(make "---filter #tag" (OptTag [WithTag Tag.(make "tag")]));
                   Filter.(make "---filter #tag3" (OptTag [WithTag Tag.(make "tag3")]));
             ])
 
 let to_file filename folder =
-      Folder.get_items folder
+      File.get_items folder
       |> List.map strings_of_item
       |> Csv.save filename
 

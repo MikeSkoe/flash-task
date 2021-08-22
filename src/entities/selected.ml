@@ -14,11 +14,18 @@ let get_item = function
       | Item (_, item) -> item
       | Filter _ -> Item.empty
 
-(*
-let normalize items = function
+let normalize filters items = function
       | Item (filter, item) ->
+            begin match List.mem item items, List.mem filter filters with
+            | (true, true) -> Item (filter, item)
+            | (false, true) -> Item (Filter.empty, item)
+            | (true, false) -> Filter filter
+            | (false, false) -> Filter Filter.empty
+            end
       | Filter filter ->
-*)
+            if List.mem filter filters
+            then Filter filter
+            else Filter Filter.empty
 
 let shift_filter items filters shift t =
       try
