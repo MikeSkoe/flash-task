@@ -7,18 +7,23 @@ type rule =
     | OptTag of rule_item list
 
 type t = {
-    title: string;
-    rule: rule;
+      id : t Id.t;
+      title: string;
+      rule: rule;
 }
 
-let make title rule = { title; rule }
+let make title rule = { title; rule; id=Id.get_next() }
 let empty = {
     title="all items";
     rule=All;
+    id=Id.get_same();
 }
 
 let get_title {title; _} = title
 let get_rule {rule; _} = rule
+let get_id {id; _} = id
+
+let set_id id t = {t with id}
 
 let return_true _ = true
 

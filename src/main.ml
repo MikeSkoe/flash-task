@@ -5,7 +5,8 @@ let rec loop state msg =
       | NavigationMsg Quit ->
             let folder = match state with 
             | View folder -> folder
-            | Detail (folder, _) -> folder
+            | Detail DetailState.(ItemEdit (folder, _)) -> folder
+            | Detail DetailState.(FilterEdit (folder, _)) -> folder
             in 
             Parser.to_file "saved.csv" folder
       | msg -> 

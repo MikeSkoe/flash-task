@@ -5,7 +5,8 @@ module DetailState = DetailState
 module ViewState = ViewState
 
 type navigation_msg =
-      | ToDetail of Item.t option
+      | ToItemDetail of Item.t option
+      | ToFilterDetail of Filter.t option
       | ToView
       | Nothing
       | Quit
@@ -23,17 +24,18 @@ let empty = View Folder.empty
 
 let get_folder = function
       | View folder -> folder
-      | Detail (folder, _) -> folder
+      | Detail (DetailState.ItemEdit (folder, _)) -> folder
+      | Detail (DetailState.FilterEdit (folder, _)) -> folder
 
 let update state msg = match state, msg with
       | (View folder, ViewMsg msg) ->
             View ViewState.(update folder msg)
 
-      | (Detail (folder, edit_data), DetailMsg msg) ->
-            Detail DetailState.(update folder edit_data msg)
+      | (Detail detail, DetailMsg msg) ->
+            Detail DetailState.(update detail msg)
 
       | (_, NavigationMsg msg) -> begin match msg with
-            | ToDetail some_item ->
+            | ToItemDetail some_item ->
                   let folder = get_folder state in
                   let edit_data = match some_item with
                         | Some item ->
@@ -43,9 +45,17 @@ let update state msg = match state, msg with
                               get_folder state
                               |> Folder.get_selected
                               |> Selected.get_filter
-                              |> EditData.of_filter 
+                              |> Filter.get_rule 
+                              |> EditData.of_rule
                   in
-                  Detail (folder, edit_data)
+                  Detail DetailState.(ItemEdit (folder, edit_data))
+            | ToFilterDetail some_filter ->
+                  let folder = get_folder state in
+                  let edit_data = match some_filter with
+                        | Some filter -> EditData.of_filter filter
+                        | None -> EditData.of_filter Filter.empty
+                  in
+                  Detail DetailState.(FilterEdit (folder, edit_data))
             | ToView -> View (get_folder state)
             | Nothing -> state
             | Quit -> state

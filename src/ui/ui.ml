@@ -162,10 +162,15 @@ let draw_view folder =
                         ViewMsg (DeleteItem selected_item)
                   | _ -> NavigationMsg Nothing
                   end
-            | `Key (`ASCII ' ', _) -> NavigationMsg (ToDetail None)
+            | `Key (`ASCII ' ', _) -> NavigationMsg (ToItemDetail None)
+            | `Key (`Tab, _) -> 
+                  begin match Folder.get_selected folder with
+                  | Selected.Item (selected_filter, _) -> NavigationMsg (ToFilterDetail (Some selected_filter))
+                  | _ -> NavigationMsg (ToFilterDetail None)
+                  end
             | `Key (`Enter, _) -> 
                   begin match Folder.get_selected folder with
-                  | Selected.Item (_, selected_item) -> NavigationMsg (ToDetail (Some selected_item))
+                  | Selected.Item (_, selected_item) -> NavigationMsg (ToItemDetail (Some selected_item))
                   | _ -> NavigationMsg Nothing
                   end
             | `Key (`Escape, _) -> NavigationMsg Quit
@@ -175,6 +180,8 @@ let draw_detail folder edit_data =
       let textarea = match edit_data with
       | EditData.NewItem textarea -> textarea
       | EditData.ExistingItem (_, textarea) -> textarea
+      | EditData.NewFilter textarea -> textarea
+      | EditData.ExistingFilter (_, textarea) -> textarea
       in
       let view = UIDetailPage.draw folder textarea in
       Notty_unix.Term.image term view;
@@ -189,12 +196,18 @@ let draw_detail folder edit_data =
             | `Key (`ASCII chr, _) -> DetailMsg (TypeChar chr)
             | `Key (`Backspace, _) -> DetailMsg DelChar
             | `Key (`Enter, _) -> DetailMsg (TypeChar '\n')
-            | `Key (`Tab, _) -> DetailMsg (Save EditData.(item_of edit_data))
-
+            | `Key (`Tab, _) ->
+                  begin match edit_data with
+                  | EditData.NewItem _
+                  | EditData.ExistingItem _ -> DetailMsg (SaveItem EditData.(item_of edit_data))
+                  | EditData.NewFilter _
+                  | EditData.ExistingFilter _ -> DetailMsg (SaveFilter EditData.(filter_of edit_data))
+                  end
             | `Key (`Escape, _) -> NavigationMsg ToView
             | _ -> NavigationMsg Nothing
 
 let draw = function
       | View folder -> draw_view folder
-      | Detail (folder, edit_data) -> draw_detail folder edit_data
+      | Detail DetailState.(ItemEdit (folder, edit_data)) -> draw_detail folder edit_data
+      | Detail DetailState.(FilterEdit (folder, edit_data)) -> draw_detail folder edit_data
 

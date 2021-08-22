@@ -1,6 +1,8 @@
+open Utils 
+
 type t =
-    | Item of Filter.t * Item.t
-    | Filter of Filter.t
+      | Item of Filter.t * Item.t
+      | Filter of Filter.t
 
 let empty = Filter Filter.empty
 
@@ -12,10 +14,11 @@ let get_item = function
       | Item (_, item) -> item
       | Filter _ -> Item.empty
 
-let rec find ?eq:((=)=(=))x lst =
-    match lst with
-    | [] -> raise (Failure "Not Found")
-    | h :: t -> if x = h then 0 else 1 + find ~eq:(=) x t
+(*
+let normalize items = function
+      | Item (filter, item) ->
+      | Filter filter ->
+*)
 
 let shift_filter items filters shift t =
       try
