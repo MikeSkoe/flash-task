@@ -1,8 +1,8 @@
 let (>>) f1 f2 arg = f2 (f1 arg)
-let rev f a1 a2 = f a2 a1
+let flip f a1 a2 = f a2 a1
 
 let intersect (a: 'a list) =
-      let mem = rev List.mem @@ a in
+      let mem = flip List.mem @@ a in
       List.exists mem
 
 let rec find ?eq:((=)=(=))x lst =

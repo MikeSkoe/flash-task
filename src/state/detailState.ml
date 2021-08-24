@@ -54,7 +54,7 @@ let update t msg = match t, msg with
       | FilterEdit _ as t, NextItem -> t
       | FilterEdit _ as t, PrevItem -> t
       | FilterEdit _ as t, SaveItem _ -> t
-      | FilterEdit _ as t, SaveFilter filter -> map(save_filter filter) t
+      | FilterEdit _ as t, SaveFilter filter -> map (save_filter filter) t
 
       | t, ShiftCursor (shift_x, shift_y) -> map (shift_cursor (shift_x, shift_y)) t
       | t, TypeChar chr -> map (type_char chr) t

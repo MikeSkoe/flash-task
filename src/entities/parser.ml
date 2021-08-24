@@ -100,6 +100,7 @@ let of_file filename =
       in
       File.(add_items items empty
             |> add_filters @@ [
+                  Filter.empty;
                   Filter.(make "---filter #tag" (OptTag [WithTag Tag.(make "tag")]));
                   Filter.(make "---filter #tag3" (OptTag [WithTag Tag.(make "tag3")]));
             ])

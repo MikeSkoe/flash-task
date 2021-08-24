@@ -170,7 +170,7 @@ let draw_view folder =
             | `Key (`Tab, _) -> 
                   begin match File.get_selected folder with
                   | Selected.Item (selected_filter, _) -> NavigationMsg (ToFilterDetail (Some selected_filter))
-                  | _ -> NavigationMsg (ToFilterDetail None)
+                  | Selected.Filter selected_filter -> NavigationMsg (ToFilterDetail (Some selected_filter))
                   end
             | `Key (`Enter, _) -> 
                   begin match File.get_selected folder with

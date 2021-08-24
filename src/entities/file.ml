@@ -1,3 +1,5 @@
+open Utils
+
 type t = {
       items: Item.t list;
       filters: Filter.t list;
@@ -6,7 +8,7 @@ type t = {
 
 let empty = {
       items=[];
-      filters=[Filter.empty];
+      filters=[];
       selected=Selected.empty;
 } 
 
@@ -22,38 +24,42 @@ let get_selected { selected; _ } = selected
 
 let normalize t = {
       t with
-      selected=Selected.(normalize t.filters t.items t.selected)
+      selected=Selected.(normalize t.filters t.items t.selected);
+      filters=if List.mem Filter.empty t.filters then t.filters else Filter.empty :: t.filters;
 }
 
-let add_items items t =
-      let old_items =
-            t.items
-            |> List.filter (fun item -> not (List.exists Item.(eq item) items))
-      in
-      let items = items @ old_items in
-      { t with items }
+module CollectionHelpers = struct
+      let add eq new_items old_items =
+            let update_items item =
+                  try List.find (eq item) new_items
+                  with Not_found -> item
+            in
+            let old_items = old_items |> List.map update_items in
+            let new_items = new_items |> List.(filter (fun item -> not (exists (eq item) old_items))) in
+            new_items @ old_items
 
-let add_filters filters t =
-      let old_filters =
-            t.filters
-            |> List.filter (fun filter -> not (List.exists Filter.(eq filter) filters))
-      in
-      let filters = filters @ old_filters in
-      { t with filters }
+      let remove new_items = List.(filter ((flip mem) new_items >> not))
+end
 
-let delete_items items t =
-      let items =
-            t.items
-            |> List.filter (fun item -> not (List.mem item items))
-      in
-      normalize { t with items }
+let add_items new_items t = {
+      t with
+      items=CollectionHelpers.add Item.eq new_items t.items
+} |> normalize
 
-let delete_filters filters t =
-      let filters =
-            t.filters
-            |> List.filter (fun filter -> not (List.mem filter filters))
-      in
-      normalize { t with filters }
+let add_filters new_filters t = {
+      t with
+      filters=CollectionHelpers.add Filter.eq new_filters t.filters
+} |> normalize 
+
+let delete_items new_items t = {
+      t with
+      items=CollectionHelpers.remove new_items t.items
+} |> normalize
+
+let delete_filters new_filters t = {
+      t with
+      filters=CollectionHelpers.remove new_filters t.filters
+} |> normalize
 
 let shift_filter shift t =
       let selected =
