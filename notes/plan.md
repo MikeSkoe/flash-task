@@ -1,30 +1,11 @@
-- add
-    - add page
-    - register close edit callback on start edit
-    - state action
-        - filter
-        - item
-    - input field
-        - generic input !singleline for now
-        - title input
-        - tags input
-        - body (for item) !singleline for now
-    - fast tags toggle/add/edit/remove
-    - multiline input
-- delete
-    - state action
-        - filter
-        - item
-
-- update ui design
-    - item detail
-    - filters positioning
-- save org data
-- write tests
-- edit body
-- reorder in global view
+- ui
+    - hotkeys || actions via typed command
+- file operations
+    - load filters from file
+    - save filters to file
 - archiving
     - item
     - filter
 - write tests
+- reorder
 
