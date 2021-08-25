@@ -3,6 +3,7 @@ open Notty_unix
 open Utils
 open Entities
 open State
+open For_ui
 
 let term = Term.create ()
 
@@ -23,7 +24,7 @@ module UINode = struct
 
       let editable cursor style str =
             let style = convert_style style in
-            let (before, curr, after) = For_ui.Textarea.split_on_pos cursor str in
+            let (before, curr, after) = Textarea.split_on_pos cursor str in
             let before = I.string style before in
             let curr = I.string (convert_style Selected) curr in
             let after = I.string style after in
@@ -90,7 +91,10 @@ module UIFilter = struct
 end
 
 module UIViewPage = struct
-      let draw folder width = 
+      let is_editing ({text; _}: Input.t) = not (text = "")
+
+      let draw folder ({chr; text}: Input.t) width = 
+            let input = UINode.(editable chr Normal) text in
             let filters =
                   File.get_filters folder
                   |> List.map @@ (
@@ -100,11 +104,11 @@ module UIViewPage = struct
                   )
                   |> I.hcat
             in
-            filters
+            I.(input <-> filters)
 end
 
 module UIDetailPage = struct
-      let draw _folder ({pos; data}: For_ui.Textarea.t) = 
+      let draw _folder ({pos; data}: Textarea.t) = 
             let image_of_title chr = function
                   | 0 -> UINode.(editable chr Normal)
                   | _ -> UINode.(text Normal)
@@ -144,16 +148,27 @@ module UIDetailPage = struct
                   I.(title <-> tags <-> divider <-> body)
 end
 
-let draw_view folder =
+let draw_view folder input =
       let (width, _) = Notty_unix.Term.size term in
-      let view = UIViewPage.draw folder width in
+      let view = UIViewPage.draw folder input width in
       Notty_unix.Term.image term view;
 
-      match Notty_unix.Term.event term with
+      let event = Notty_unix.Term.event term in
+      if UIViewPage.is_editing input
+      then begin match event with
+            | `Key (`Escape, _) -> NavigationMsg Quit
+            | `Key (`ASCII chr, _) -> ViewMsg (TypeChar chr)
+            | _ -> NavigationMsg Nothing
+      end
+      else begin match event with
+            | `Key (`Escape, _) -> NavigationMsg Quit
             | `Key (`Arrow `Up, _) -> ViewMsg PrevItem
             | `Key (`Arrow `Down, _) -> ViewMsg NextItem
             | `Key (`Arrow `Left, _) -> ViewMsg PrevFilter
             | `Key (`Arrow `Right, _) -> ViewMsg NextFilter
+            | `Key (`ASCII ':', _) -> ViewMsg (TypeChar ':')
+            | _ -> NavigationMsg Nothing
+            (*
             | `Key (`Delete, _) -> 
                   begin match File.get_selected folder with
                   | Selected.Item (selected_filter, _)
@@ -177,8 +192,8 @@ let draw_view folder =
                   | Selected.Item (_, selected_item) -> NavigationMsg (ToItemDetail (Some selected_item))
                   | _ -> NavigationMsg Nothing
                   end
-            | `Key (`Escape, _) -> NavigationMsg Quit
-            | _ -> NavigationMsg Nothing
+            *)
+      end
 
 let draw_detail folder edit_data =
       let textarea = match edit_data with
@@ -211,7 +226,7 @@ let draw_detail folder edit_data =
             | _ -> NavigationMsg Nothing
 
 let draw = function
-      | View folder -> draw_view folder
+      | View (folder, textarea) -> draw_view folder textarea
       | Detail DetailState.(ItemEdit (folder, edit_data)) -> draw_detail folder edit_data
       | Detail DetailState.(FilterEdit (folder, edit_data)) -> draw_detail folder edit_data
 

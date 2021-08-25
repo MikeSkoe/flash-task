@@ -1,4 +1,5 @@
 open Entities
+open For_ui
 
 module Parser = Parser
 module DetailState = DetailState
@@ -20,16 +21,16 @@ type t =
       | View of ViewState.t
       | Detail of DetailState.t
 
-let empty = View File.empty
+let empty = View (File.empty, Input.empty)
 
 let get_folder = function
-      | View folder -> folder
+      | View (folder, _) -> folder
       | Detail (DetailState.ItemEdit (folder, _)) -> folder
       | Detail (DetailState.FilterEdit (folder, _)) -> folder
 
 let update state msg = match state, msg with
-      | (View folder, ViewMsg msg) ->
-            View ViewState.(update folder msg)
+      | (View (folder, input), ViewMsg msg) ->
+            View ViewState.(update folder input msg)
 
       | (Detail detail, DetailMsg msg) ->
             Detail DetailState.(update detail msg)
@@ -56,7 +57,7 @@ let update state msg = match state, msg with
                         | None -> EditData.of_filter Filter.empty
                   in
                   Detail DetailState.(FilterEdit (folder, edit_data))
-            | ToView -> View (get_folder state)
+            | ToView -> View ((get_folder state), Input.empty)
             | Nothing -> state
             | Quit -> state
       end
