@@ -157,7 +157,9 @@ let draw_view folder input =
       if UIViewPage.is_editing input
       then begin match event with
             | `Key (`Escape, _) -> NavigationMsg Quit
-            | `Key (`ASCII chr, _) -> ViewMsg (TypeChar chr)
+            | `Key (`Enter, _) -> ViewMsg ApplyAction
+            | `Key (`ASCII chr, _) -> ViewMsg (Input Input.(TypeChar chr))
+            | `Key (`Backspace, _) -> ViewMsg (Input Input.DelChar)
             | _ -> NavigationMsg Nothing
       end
       else begin match event with
@@ -166,33 +168,13 @@ let draw_view folder input =
             | `Key (`Arrow `Down, _) -> ViewMsg NextItem
             | `Key (`Arrow `Left, _) -> ViewMsg PrevFilter
             | `Key (`Arrow `Right, _) -> ViewMsg NextFilter
-            | `Key (`ASCII ':', _) -> ViewMsg (TypeChar ':')
-            | _ -> NavigationMsg Nothing
-            (*
-            | `Key (`Delete, _) -> 
-                  begin match File.get_selected folder with
-                  | Selected.Item (selected_filter, _)
-                  | Selected.Filter selected_filter->
-                        ViewMsg (DeleteFilter selected_filter)
-                  end
-            | `Key (`Backspace, _) -> 
-                  begin match File.get_selected folder with
-                  | Selected.Item (_, selected_item) ->
-                        ViewMsg (DeleteItem selected_item)
-                  | _ -> NavigationMsg Nothing
-                  end
-            | `Key (`ASCII ' ', _) -> NavigationMsg (ToItemDetail None)
-            | `Key (`Tab, _) -> 
-                  begin match File.get_selected folder with
-                  | Selected.Item (selected_filter, _) -> NavigationMsg (ToFilterDetail (Some selected_filter))
-                  | Selected.Filter selected_filter -> NavigationMsg (ToFilterDetail (Some selected_filter))
-                  end
+            | `Key (`ASCII ':', _) -> ViewMsg (Input Input.(TypeChar ':'))
             | `Key (`Enter, _) -> 
                   begin match File.get_selected folder with
                   | Selected.Item (_, selected_item) -> NavigationMsg (ToItemDetail (Some selected_item))
                   | _ -> NavigationMsg Nothing
                   end
-            *)
+            | _ -> NavigationMsg Nothing
       end
 
 let draw_detail folder edit_data =
@@ -208,13 +190,13 @@ let draw_detail folder edit_data =
       match Notty_unix.Term.event term with
             | `Key (`Arrow `Right, [`Shift]) -> DetailMsg NextItem
             | `Key (`Arrow `Left, [`Shift]) -> DetailMsg PrevItem
-            | `Key (`Arrow `Left, _) -> DetailMsg (ShiftCursor (-1, 0))
-            | `Key (`Arrow `Right, _) -> DetailMsg (ShiftCursor (1, 0))
-            | `Key (`Arrow `Up, _) -> DetailMsg (ShiftCursor (0, -1))
-            | `Key (`Arrow `Down, _) -> DetailMsg (ShiftCursor (0, 1))
-            | `Key (`ASCII chr, _) -> DetailMsg (TypeChar chr)
-            | `Key (`Backspace, _) -> DetailMsg DelChar
-            | `Key (`Enter, _) -> DetailMsg (TypeChar '\n')
+            | `Key (`Arrow `Left, _) -> DetailMsg (Input Textarea.(ShiftCursor (-1, 0)))
+            | `Key (`Arrow `Right, _) -> DetailMsg (Input Textarea.(ShiftCursor (1, 0)))
+            | `Key (`Arrow `Up, _) -> DetailMsg (Input Textarea.(ShiftCursor (0, -1)))
+            | `Key (`Arrow `Down, _) -> DetailMsg (Input Textarea.(ShiftCursor (0, 1)))
+            | `Key (`ASCII chr, _) -> DetailMsg (Input Textarea.(TypeChar chr))
+            | `Key (`Backspace, _) -> DetailMsg (Input Textarea.DelChar)
+            | `Key (`Enter, _) -> DetailMsg (Input Textarea.(TypeChar '\n'))
             | `Key (`Tab, _) ->
                   begin match edit_data with
                   | EditData.NewItem _

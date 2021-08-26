@@ -8,11 +8,9 @@ type t =
 type msg =
       | NextItem
       | PrevItem
-      | ShiftCursor of int * int
-      | TypeChar of char
+      | Input of Textarea.msg
       | SaveItem of Item.t
       | SaveFilter of Filter.t
-      | DelChar
 
 let map fn = function
       | ItemEdit (folder, edit_data) -> ItemEdit (fn (folder, edit_data))
@@ -56,7 +54,5 @@ let update t msg = match t, msg with
       | FilterEdit _ as t, SaveItem _ -> t
       | FilterEdit _ as t, SaveFilter filter -> map (save_filter filter) t
 
-      | t, ShiftCursor (shift_x, shift_y) -> map (shift_cursor (shift_x, shift_y)) t
-      | t, TypeChar chr -> map (type_char chr) t
-      | t, DelChar -> map del_char t
+      | t, Input msg -> map (fun (folder, edit_data) -> (folder, EditData.map Textarea.(update msg) edit_data)) t
 

@@ -1,5 +1,10 @@
 open Utils
 
+type msg =
+      | ShiftCursor of int * int
+      | TypeChar of char
+      | DelChar
+
 (* TODO:? rewrite to functor with current line as inner value *)
 type t = {
       pos: int * int;
@@ -108,4 +113,9 @@ let del_char {pos; data} =
             if chr = 0
             then (int_of_float infinity, -1)
             else (-1, int_of_float infinity)
+
+let update = function
+      | ShiftCursor (shift_x, shift_y) -> shift_cursor (shift_x, shift_y)
+      | TypeChar (chr) -> type_char chr
+      | DelChar -> del_char
 

@@ -4,6 +4,11 @@ type t = {
       text: string;
 }
 
+type msg =
+      | ShiftCursor of int
+      | TypeChar of char
+      | DelChar
+
 let empty = {
       chr=0;
       text="";
@@ -64,4 +69,9 @@ let del_char {chr; text} =
             if chr = 0
             then int_of_float infinity
             else -1
+
+let update = function
+      | ShiftCursor shift_x -> shift_cursor shift_x
+      | TypeChar chr -> type_char chr
+      | DelChar -> del_char
 
