@@ -7,6 +7,8 @@ type t =
       | NewFilter of Textarea.t
       | ExistingFilter of Filter.t Id.t * Textarea.t
 
+let empty = NewItem Textarea.empty
+
 let map fn = function
       | NewItem textarea -> NewItem (fn textarea)
       | ExistingItem (id, textarea) -> ExistingItem (id, fn textarea)

@@ -148,30 +148,44 @@ module UIDetailPage = struct
                   I.(title <-> tags <-> divider <-> body)
 end
 
-let draw_view folder input =
+let draw_view filter input =
       let (width, _) = Notty_unix.Term.size term in
-      let view = UIViewPage.draw folder input width in
+      let view = UIViewPage.draw filter input width in
       Notty_unix.Term.image term view;
-
       let event = Notty_unix.Term.event term in
+
       if UIViewPage.is_editing input
       then begin match event with
             | `Key (`Escape, _) -> NavigationMsg Quit
-            | `Key (`Enter, _) -> ViewMsg ApplyAction
+            | `Key (`Enter, _) ->
+                  begin match File.get_selected filter, String.split_on_char ' ' input.text with
+                  | Selected.Item (_filter, item), ":delete"::_ ->
+                        ViewMsg (DeleteItem item)
+                  | Selected.Filter filter, ":delete"::_ ->
+                        ViewMsg (DeleteFilter filter)
+                  | _, ":add"::text ->
+                        ViewMsg (AddItem String.(concat " " text))
+                  | _ -> NavigationMsg Nothing
+                  end
             | `Key (`ASCII chr, _) -> ViewMsg (Input Input.(TypeChar chr))
             | `Key (`Backspace, _) -> ViewMsg (Input Input.DelChar)
             | _ -> NavigationMsg Nothing
       end
       else begin match event with
+            (* ui movement *)
+            | `Key (`Arrow direction, _) -> begin match direction with
+                  | `Up -> ViewMsg PrevItem
+                  | `Down -> ViewMsg NextItem
+                  | `Left -> ViewMsg PrevFilter
+                  | `Right -> ViewMsg NextFilter
+            end
+
+            (* navigation *)
             | `Key (`Escape, _) -> NavigationMsg Quit
-            | `Key (`Arrow `Up, _) -> ViewMsg PrevItem
-            | `Key (`Arrow `Down, _) -> ViewMsg NextItem
-            | `Key (`Arrow `Left, _) -> ViewMsg PrevFilter
-            | `Key (`Arrow `Right, _) -> ViewMsg NextFilter
             | `Key (`ASCII ':', _) -> ViewMsg (Input Input.(TypeChar ':'))
             | `Key (`Enter, _) -> 
-                  begin match File.get_selected folder with
-                  | Selected.Item (_, selected_item) -> NavigationMsg (ToItemDetail (Some selected_item))
+                  begin match File.get_selected filter with
+                  | Selected.Item (_, selected_item) -> DetailMsg (InitItem (Some selected_item))
                   | _ -> NavigationMsg Nothing
                   end
             | _ -> NavigationMsg Nothing
@@ -188,12 +202,18 @@ let draw_detail folder edit_data =
       Notty_unix.Term.image term view;
 
       match Notty_unix.Term.event term with
-            | `Key (`Arrow `Right, [`Shift]) -> DetailMsg NextItem
-            | `Key (`Arrow `Left, [`Shift]) -> DetailMsg PrevItem
-            | `Key (`Arrow `Left, _) -> DetailMsg (Input Textarea.(ShiftCursor (-1, 0)))
-            | `Key (`Arrow `Right, _) -> DetailMsg (Input Textarea.(ShiftCursor (1, 0)))
-            | `Key (`Arrow `Up, _) -> DetailMsg (Input Textarea.(ShiftCursor (0, -1)))
-            | `Key (`Arrow `Down, _) -> DetailMsg (Input Textarea.(ShiftCursor (0, 1)))
+            (* ui movement *)
+            | `Key (`Arrow direction, modificators) ->
+                  begin match direction, modificators with
+                        | `Right, [`Shift] -> DetailMsg NextItem
+                        | `Left, [`Shift] -> DetailMsg PrevItem
+                        | `Left, _ -> DetailMsg (Input Textarea.(ShiftCursor (-1, 0)))
+                        | `Right, _ -> DetailMsg (Input Textarea.(ShiftCursor (1, 0)))
+                        | `Up, _ -> DetailMsg (Input Textarea.(ShiftCursor (0, -1)))
+                        | `Down, _ -> DetailMsg (Input Textarea.(ShiftCursor (0, 1)))
+                  end
+
+            (* typing *)
             | `Key (`ASCII chr, _) -> DetailMsg (Input Textarea.(TypeChar chr))
             | `Key (`Backspace, _) -> DetailMsg (Input Textarea.DelChar)
             | `Key (`Enter, _) -> DetailMsg (Input Textarea.(TypeChar '\n'))
@@ -204,6 +224,8 @@ let draw_detail folder edit_data =
                   | EditData.NewFilter _
                   | EditData.ExistingFilter _ -> DetailMsg (SaveFilter EditData.(filter_of edit_data))
                   end
+
+            (* navigation *)
             | `Key (`Escape, _) -> NavigationMsg ToView
             | _ -> NavigationMsg Nothing
 

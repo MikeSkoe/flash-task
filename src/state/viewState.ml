@@ -1,7 +1,10 @@
 open Entities
+open Utils
 open For_ui
 
 type t = File.t * Input.t
+
+let empty = (File.empty, Input.empty)
 
 type msg = 
       | NextItem
@@ -11,22 +14,25 @@ type msg =
       | DeleteItem of Item.t
       | DeleteFilter of Filter.t
       | Input of Input.msg
-      | ApplyAction
+      | AddItem of string
 
-let update folder input = function
-      | DeleteItem item -> (File.(delete_items [item] folder), input)
-      | DeleteFilter filter -> (File.(delete_filters [filter] folder), input)
+let update (file, input) = function
+      | DeleteItem item -> (File.(delete_items [item] file), Input.empty)
+      | DeleteFilter filter -> (File.(delete_filters [filter] file), Input.empty)
+      | AddItem title ->
+            let tags =
+                  file
+                  |> File.get_selected
+                  |> Selected.get_filter
+                  |> Filter.(get_rule >> tags_of)
+            in
+            let item = Item.make title tags "" in
+            let file = File.add_items [item] file in
+            (file, Input.empty)
       
-      | NextFilter -> (File.shift_filter 1 folder, input)
-      | PrevFilter -> (File.shift_filter (-1) folder, input)
-      | NextItem -> (File.shift_item 1 folder, input)
-      | PrevItem -> (File.shift_item (-1) folder, input)
-      | Input msg -> (folder, Input.update msg input)
-      | ApplyAction ->
-              let folder = match String.trim input.text, File.get_selected folder with
-              | ":delete", Selected.(Item (_, selected_item)) -> File.delete_items [selected_item] folder
-              | _ -> folder
-              in
-              let input = Input.empty in
-              (folder, input)
+      | NextFilter -> (File.shift_filter 1 file, input)
+      | PrevFilter -> (File.shift_filter (-1) file, input)
+      | NextItem -> (File.shift_item 1 file, input)
+      | PrevItem -> (File.shift_item (-1) file, input)
+      | Input msg -> (file, Input.update msg input)
 
