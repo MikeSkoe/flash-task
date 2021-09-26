@@ -1,50 +1,46 @@
-type rule_item =
-    | WithTag of Tag.t
+open Utils
 
 type rule = 
-    | WithoutTags
+    (* TODO: empty list instead of All case? *)
     | All
-    | OptTag of rule_item list
+    | WithTags of Tag.t list
 
 type t = {
-      id : t Id.t;
+      id: t Id.t;
       title: string;
       rule: rule;
 }
 
 let make title rule = { title; rule; id=Id.get_next() }
+
 let empty = {
     title="all items";
     rule=All;
-    id=Id.get_same();
+    id=Id.empty;
 }
 
-let get_title {title; _} = title
-let get_rule {rule; _} = rule
-let get_id {id; _} = id
+module Get = struct
+      let title {title; _} = title
+      let rule {rule; _} = rule
+      let id {id; _} = id
+end
 
-let set_id id t = {t with id}
+module Set = struct
+      let id id t = {t with id}
+end
 
 let return_true _ = true
 
 let is_suitable = function
     | All -> return_true
-    | WithoutTags -> Item.has_no_tag
-    | OptTag rule_items -> 
-        let fold item check (WithTag tag_id) = 
-            if check = true then true else
-            Item.has_tag tag_id item
-        in
-        (fun item -> List.fold_left (fold item) false rule_items)
+    | WithTags tags -> 
+        (fun item -> List.exists Item.((flip has_tag) item) tags)
 
 let apply t items = List.filter (is_suitable t.rule) items
 
 let eq a b = a.id = b.id
 
 let tags_of = function
-      | WithoutTags -> []
       | All -> []
-      | OptTag rule_items ->
-            rule_items
-            |> List.map (function WithTag tag -> tag) 
+      | WithTags tags -> tags
 

@@ -9,7 +9,7 @@ let of_string =
 
 let get_next () = Random.int 999
 
-let get_same () = 1
+let empty = 0
 
 let print t = print_endline @@ Printf.sprintf "%d" t
 

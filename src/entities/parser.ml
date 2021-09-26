@@ -55,17 +55,15 @@ let string_of_item item =
 
 let string_of_rule = function
       | Filter.All -> "*"
-      | Filter.WithoutTags -> "-"
-      | Filter.OptTag rule_items ->
-            rule_items
-            |> List.map (fun (Filter.WithTag tag) -> Printf.sprintf "+%s" Tag.(get_title tag))
+      | Filter.WithTags tags ->
+            tags
+            |> List.map (fun tag -> Printf.sprintf "+%s" Tag.(get_title tag))
             |> String.concat ","
 
 let rule_of_string = function
       | "*" -> Filter.All
-      | "-" -> Filter.WithoutTags
-      | rule_items -> 
-            rule_items
+      | tags -> Filter.WithTags (
+            tags
             |> String.split_on_char ','
             |> List.map (
                   String.to_seq
@@ -73,15 +71,15 @@ let rule_of_string = function
                   >> (function
                      | '+' :: tail ->
                            let tail = List.to_seq tail |> String.of_seq in
-                           Filter.WithTag Tag.(make tail)
-                     | _ -> Filter.WithTag Tag.(make ""))
+                           Tag.(make tail)
+                     | _ -> Tag.(make ""))
             )
-            |> (fun rule_items -> Filter.OptTag rule_items)
+      )
 
 let string_of_filter filter =
-    let title = Filter.get_title filter in
+    let title = Filter.Get.title filter in
     let rule =
-          Filter.get_rule filter
+          Filter.Get.rule filter
           |> string_of_rule 
     in
     String.concat "\n" [title; rule]
@@ -98,15 +96,16 @@ let of_file filename =
             Csv.load filename
             |> List.map item_of_strings
       in
-      File.(add_items items empty
-            |> add_filters @@ [
-                  Filter.empty;
-                  Filter.(make "---filter #tag" (OptTag [WithTag Tag.(make "tag")]));
-                  Filter.(make "---filter #tag3" (OptTag [WithTag Tag.(make "tag3")]));
-            ])
+      let filters = [
+            Filter.empty;
+            Filter.(make "---filter #tag" (WithTags [Tag.(make "tag")]));
+            Filter.(make "---filter #tag3" (WithTags [Tag.(make "tag3")]));
+      ]
+      in
+      items, filters
 
-let to_file filename folder =
-      File.get_items folder
+let to_file filename items =
+      items
       |> List.map strings_of_item
       |> Csv.save filename
 

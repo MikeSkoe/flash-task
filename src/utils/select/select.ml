@@ -1,3 +1,5 @@
+(* open Utils *)
+
 let memo ?is_equal:(is_eq=(=)) fn =
   let last_arg_res = ref None in
   (fun arg ->
@@ -11,8 +13,6 @@ let memo ?is_equal:(is_eq=(=)) fn =
 
 type ('a, 'b) t = Select of ('a -> 'b)
   
-let make fn = Select fn
-
 let return res = Select (fun _ -> res)
 
 let apply (Select fn) = fn
@@ -27,3 +27,4 @@ let (>>=) (Select fn) bind_fn =
  
 let branch (Select check) (Select if_true) (Select if_false) =
       Select (fun arg -> if check arg then if_true arg else if_false arg)
+

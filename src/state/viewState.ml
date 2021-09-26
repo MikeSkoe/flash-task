@@ -2,9 +2,19 @@ open Entities
 open Utils
 open For_ui
 
-type t = File.t * Input.t
+type t = {
+      items: Item.t list;
+      filters: Filter.t list;
+      selected: Selected.t;
+      input: Input.t;
+}
 
-let empty = (File.empty, Input.empty)
+let empty = {
+      items=[];
+      filters=[];
+      selected=Selected.empty;
+      input=Input.empty;
+}
 
 type msg = 
       | NextItem
@@ -16,23 +26,45 @@ type msg =
       | Input of Input.msg
       | AddItem of string
 
-let update (file, input) = function
-      | DeleteItem item -> (File.(delete_items [item] file), Input.empty)
-      | DeleteFilter filter -> (File.(delete_filters [filter] file), Input.empty)
+let shift_filter shift {items; filters; selected; input} =
+      let selected =
+            selected
+            |> Selected.shift_filter items filters shift
+      in
+      {items; filters; selected; input}
+
+let shift_item shift {items; filters; selected; input} =
+      let selected =
+            selected
+            |> Selected.shift_item items shift
+      in
+      {items; filters; selected; input}
+
+let update {items; filters; selected; input} = function
+      | DeleteItem item ->
+            let items = List.filter (Item.(eq item) >> not) items in
+            let selected = Selected.normalize filters items selected in
+            let input = Input.empty in
+            {items; filters; selected; input}
+      | DeleteFilter filter ->
+            let filters = List.filter (Filter.(eq filter) >> not) filters in
+            let selected = Selected.normalize filters items selected in
+            let input = Input.empty in
+            {items; filters; selected; input}
       | AddItem title ->
             let tags =
-                  file
-                  |> File.get_selected
-                  |> Selected.get_filter
-                  |> Filter.(get_rule >> tags_of)
+                  Selected.get_filter selected
+                  |> Filter.(Get.rule >> tags_of)
             in
             let item = Item.make title tags "" in
-            let file = File.add_items [item] file in
-            (file, Input.empty)
-      
-      | NextFilter -> (File.shift_filter 1 file, input)
-      | PrevFilter -> (File.shift_filter (-1) file, input)
-      | NextItem -> (File.shift_item 1 file, input)
-      | PrevItem -> (File.shift_item (-1) file, input)
-      | Input msg -> (file, Input.update msg input)
+            let items = item :: items in
+            let input = Input.empty in
+            {items; filters; selected; input}
+      | NextFilter -> shift_filter 1 {items; filters; selected; input}
+      | PrevFilter -> shift_filter (-1) {items; filters; selected; input}
+      | NextItem -> shift_item 1 {items; filters; selected; input}
+      | PrevItem -> shift_item (-1) {items; filters; selected; input}
+      | Input msg ->
+            let input = Input.update msg input in
+            {items; filters; selected; input}
 
