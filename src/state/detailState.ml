@@ -52,15 +52,19 @@ let save_item {id; items; textarea} =
 
 let init_item item = Item.get_id item, Textarea.make Parser.(string_of_item item)
 
-let update {id; items; textarea} = function
-      | Init (id, items) ->
-            let cur_item = List.find (fun (item: Item.t) -> item.id = id) items in
-            let textarea = Textarea.make Parser.(string_of_item cur_item) in
-            {id; items; textarea}
-      | NextItem -> shift_item true {id; items; textarea}
-      | PrevItem -> shift_item false {id; items; textarea}
-      | SaveItem -> save_item {id; items; textarea}
-      | Input msg ->
-            let textarea = Textarea.update msg textarea in
-            {id; items; textarea}
+let init id items _t = 
+      let cur_item = List.find (fun (item: Item.t) -> item.id = id) items in
+      let textarea = Textarea.make Parser.(string_of_item cur_item) in
+      {id; items; textarea}
+
+let change_input msg {id; items; textarea} = 
+      let textarea = Textarea.update msg textarea in
+      {id; items; textarea}
+
+let update = function
+      | Init (id, items) -> init id items
+      | NextItem -> shift_item true
+      | PrevItem -> shift_item false
+      | SaveItem -> save_item
+      | Input msg -> change_input msg 
 

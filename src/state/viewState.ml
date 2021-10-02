@@ -29,7 +29,7 @@ type msg =
 let shift_filter shift {items; filters; selected; input} =
       let selected =
             selected
-            |> Selected.shift_filter items filters shift
+            |> Selected.shift_filter filters shift
       in
       {items; filters; selected; input}
 
@@ -40,31 +40,42 @@ let shift_item shift {items; filters; selected; input} =
       in
       {items; filters; selected; input}
 
-let update {items; filters; selected; input} = function
-      | DeleteItem item ->
-            let items = List.filter (Item.(eq item) >> not) items in
-            let selected = Selected.normalize filters items selected in
-            let input = Input.empty in
-            {items; filters; selected; input}
-      | DeleteFilter filter ->
-            let filters = List.filter (Filter.(eq filter) >> not) filters in
-            let selected = Selected.normalize filters items selected in
-            let input = Input.empty in
-            {items; filters; selected; input}
-      | AddItem title ->
-            let tags =
-                  Selected.get_filter selected
-                  |> Filter.(Get.rule >> tags_of)
-            in
-            let item = Item.make title tags "" in
-            let items = item :: items in
-            let input = Input.empty in
-            {items; filters; selected; input}
-      | NextFilter -> shift_filter 1 {items; filters; selected; input}
-      | PrevFilter -> shift_filter (-1) {items; filters; selected; input}
-      | NextItem -> shift_item 1 {items; filters; selected; input}
-      | PrevItem -> shift_item (-1) {items; filters; selected; input}
-      | Input msg ->
-            let input = Input.update msg input in
-            {items; filters; selected; input}
+(* TODO: accept module for eq?*)
+let filter_out_element eq x = List.filter ((eq x) >> not)
+
+let delete_item item {items; filters; selected; _} = 
+      let items = filter_out_element Item.eq item items in
+      let selected = Selected.normalize filters items selected in
+      let input = Input.empty in
+      {items; filters; selected; input}
+
+let delete_filter filter {items; filters; selected; _} = 
+      let filters = filter_out_element Filter.eq filter filters in
+      let selected = Selected.normalize filters items selected in
+      let input = Input.empty in
+      {items; filters; selected; input}
+
+let add_item title {items; filters; selected; _} =
+      let tags =
+            Selected.get_filter selected
+            |> Filter.(Get.rule >> tags_of)
+      in
+      let item = Item.make title tags "" in
+      let items = item :: items in
+      let input = Input.empty in
+      {items; filters; selected; input}
+
+let change_input msg {items; filters; selected; input} = 
+      let input = Input.update msg input in
+      {items; filters; selected; input}
+
+let update = function
+      | DeleteItem item -> delete_item item
+      | DeleteFilter filter -> delete_filter filter
+      | AddItem title -> add_item title
+      | NextFilter -> shift_filter 1
+      | PrevFilter -> shift_filter (-1)
+      | NextItem -> shift_item 1
+      | PrevItem -> shift_item (-1)
+      | Input msg -> change_input msg
 

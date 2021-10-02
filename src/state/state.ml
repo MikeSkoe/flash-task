@@ -44,10 +44,10 @@ type t =
 let empty = View ViewState.empty
 
 let update state msg = match state, msg with
-      | (View view_data, ViewMsg msg) -> View ViewState.(update view_data msg)
-      | (Detail detail, DetailMsg msg) -> Detail DetailState.(update detail msg)
+      | (View view_data, ViewMsg msg) -> View ViewState.(update msg view_data)
+      | (Detail detail, DetailMsg msg) -> Detail DetailState.(update msg detail)
       | (_, NavigationMsg msg) -> begin match msg with
-            | ToDetail (id, items) -> Detail DetailState.(update empty (Init (id, items)))
+            | ToDetail (id, items) -> Detail DetailState.(update (Init (id, items)) empty)
             | ToView updated_items ->
                   let file_items, file_filters = Parser.of_file "data.csv" in
                   let items =
