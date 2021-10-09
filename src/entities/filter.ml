@@ -3,7 +3,7 @@ open Utils
 type rule = 
     (* TODO: empty list instead of All case? *)
     | All
-    | WithTags of Tag.t list
+    | WithTags of string list
 
 type t = {
       id: t Id.t;

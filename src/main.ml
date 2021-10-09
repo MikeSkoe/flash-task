@@ -14,7 +14,7 @@ let rec loop state msg =
             let state = update state msg in
             let msg = Ui.draw state in
             loop state msg
- 
+
 let _ =
       let items, filters = Parser.of_file "data.csv" in
       let selected = Selected.empty in

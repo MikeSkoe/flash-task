@@ -22,12 +22,12 @@ type msg =
 
 let rec iter_right (item: Item.t) = function
       | [] -> item
-      | head :: next :: _ when Item.(get_id head) = item.id -> next 
+      | head :: next :: _ when Item.Get.(id head) = item.id -> next 
       | _ :: tail -> iter_right item tail 
 
 let rec iter_left (item: Item.t) = function
       | [] -> item
-      | prev :: head :: _ when Item.(get_id head) = item.id -> prev 
+      | prev :: head :: _ when Item.Get.(id head) = item.id -> prev 
       | _ :: tail -> iter_left item tail 
 
 let shift_item right {id; items; _} =
@@ -41,16 +41,16 @@ let save_item {id; items; textarea} =
       let items =
             items
             |> List.map (fun item ->
-                  if Item.(get_id item) = id
+                  if Item.Get.id item = id
                   then textarea.data
                         |> Parser.item_of_string 
-                        |> Item.set_id id
+                        |> Item.Set.id id
                   else item
             )
       in
       {id; items; textarea}
 
-let init_item item = Item.get_id item, Textarea.make Parser.(string_of_item item)
+let init_item item = Item.Get.id item, Textarea.make Parser.(string_of_item item)
 
 let init id items _t = 
       let cur_item = List.find (fun (item: Item.t) -> item.id = id) items in

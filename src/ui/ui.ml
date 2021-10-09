@@ -40,15 +40,14 @@ end
 
 module UITag = struct
       let draw =
-            Tag.get_title
-            >> Printf.sprintf "[%s]"
+            Printf.sprintf "[%s]"
             >> UINode.(text Secondary)
 end
 
 module UIItem = struct
       let draw is_folder_selected selected item =
             let tags =
-                  Item.get_tags item
+                  Item.Get.tags item
                   |> List.map UITag.draw
                   |> I.hcat
             in
@@ -57,7 +56,7 @@ module UIItem = struct
                   | _ -> UINode.Normal
             in
             let title =
-                  Item.get_title item
+                  Item.Get.title item
                   |> UINode.(text style)
             in
             I.(title <-> tags)
@@ -157,13 +156,14 @@ let draw_view items filters selected input =
       then begin match event with
             | `Key (`Escape, _) -> NavigationMsg Quit
             | `Key (`Enter, _) ->
-                  begin match selected, String.split_on_char ' ' input.text with
-                  | Selected.Item (_filter, item), ":delete"::_ ->
-                        ViewMsg (DeleteItem item)
-                  | Selected.Filter filter, ":delete"::_ ->
-                        ViewMsg (DeleteFilter filter)
-                  | _, ":add"::text ->
-                        ViewMsg (AddItem String.(concat " " text))
+                  begin match String.split_on_char ' ' input.text with
+                  | ":delete"::_ ->
+                        begin match selected with
+                        | Selected.Item (_filter, item) -> ViewMsg (DeleteItem item)
+                        | Selected.Filter filter -> ViewMsg (DeleteFilter filter)
+                        end
+                  | ":add"::text -> ViewMsg (AddItem String.(concat " " text))
+                  | ":quit"::_ -> NavigationMsg Quit
                   | _ -> NavigationMsg Nothing
                   end
             | `Key (`ASCII chr, _) -> ViewMsg (Input Input.(TypeChar chr))
@@ -186,7 +186,7 @@ let draw_view items filters selected input =
                   begin match selected with
                   | Selected.Item (selected_filter, selected_item) ->
                         let items = Filter.apply selected_filter items in
-                        NavigationMsg (ToDetail (Item.(get_id selected_item), items))
+                        NavigationMsg (ToDetail (Item.(Get.id selected_item), items))
                   | _ -> NavigationMsg Nothing
                   end
             | _ -> NavigationMsg Nothing

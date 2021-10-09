@@ -9,9 +9,11 @@ module DB = struct
       let connection_url = Printf.sprintf "sqlite3://%s/items.db" Sys.(getcwd ())
 
       module Q = struct
-            let create_tmp = Caqti_request.exec Caqti_type.unit {| CREATE TABLE IF NOT EXISTS items (
+            module R = Caqti_request
+            module T = Caqti_type
+
+            let create_table = R.exec T.unit {| CREATE TABLE IF NOT EXISTS items (
                   id INTEGER PRIMARY KEY,
-                  tags TEXT,
                   title TEXT,
                   body TEXT
                )
@@ -19,7 +21,7 @@ module DB = struct
       end
 
       let run (module Db : Caqti_blocking.CONNECTION) =
-            Db.exec Q.create_tmp () |> Caqti_blocking.or_fail
+            Db.exec Q.create_table () |> Caqti_blocking.or_fail
 
       let cnt = Caqti_blocking.connect (Uri.of_string connection_url)
             |> Caqti_blocking.or_fail

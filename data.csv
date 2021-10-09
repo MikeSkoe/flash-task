@@ -1,11 +1,3 @@
-weed,"# asdfasdf
-> sldfkjasdf
-
-* sdfafdhfshdf
-* sdfasd
-* pdf","tag
-another tag
-learn"
-word,"some detail
-of this thing",some tags
-another word, body, tag 
+weed #tag #another_tag #learn,> sldfkjasdf
+word #tag,some detail of this thing
+another word #tag, body

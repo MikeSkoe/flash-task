@@ -56,11 +56,7 @@ let delete_filter filter {items; filters; selected; _} =
       {items; filters; selected; input}
 
 let add_item title {items; filters; selected; _} =
-      let tags =
-            Selected.get_filter selected
-            |> Filter.(Get.rule >> tags_of)
-      in
-      let item = Item.make title tags "" in
+      let item = Item.make title "" in
       let items = item :: items in
       let input = Input.empty in
       {items; filters; selected; input}
