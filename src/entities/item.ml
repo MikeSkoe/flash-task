@@ -3,7 +3,7 @@ open Utils
 type t = {
       id: t Id.t;
       title: string;
-      tags: string list;
+      tags: Tag.t list;
       body: string;
 }
 
@@ -19,17 +19,9 @@ module Set = struct
       let tags tags t = {t with tags}
 end
 
-let make title body =
-      let tags =
-            String.split_on_char ' ' title
-            |> List.map (String.to_seq >> List.of_seq)
-            |> List.filter (function
-                  | '#'::_ -> true
-                  | _ -> false
-            )
-            |> List.map (List.to_seq >> String.of_seq)
-      in
-      { title; tags; body; id=Id.get_next() } 
+let make ?id:(id=Id.get_next()) title body =
+      let tags = Tag.tags_of_string title in
+      { title; tags; body; id } 
 
 let empty = make "" ""
 
@@ -39,4 +31,3 @@ let has_tag tag = Get.tags >> List.exists @@ (=) tag
 let has_no_tag = Get.tags >> (=) []
 
 let eq a b = a.id = b.id
-

@@ -3,7 +3,7 @@ open Utils
 type rule = 
     (* TODO: empty list instead of All case? *)
     | All
-    | WithTags of string list
+    | WithTags of Tag.t list
 
 type t = {
       id: t Id.t;
@@ -11,7 +11,12 @@ type t = {
       rule: rule;
 }
 
-let make title rule = { title; rule; id=Id.get_next() }
+let make ?id:(id=Id.get_next()) title =
+      let rule = match Tag.tags_of_string title with
+            | [] -> All
+            | tags -> WithTags tags
+      in
+      { title; rule; id }
 
 let empty = {
     title="all items";

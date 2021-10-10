@@ -40,7 +40,8 @@ end
 
 module UITag = struct
       let draw =
-            Printf.sprintf "[%s]"
+            Tag.as_string
+            >> Printf.sprintf "[%s]"
             >> UINode.(text Secondary)
 end
 
@@ -184,15 +185,14 @@ let draw_view items filters selected input =
             | `Key (`ASCII ':', _) -> ViewMsg (Input Input.(TypeChar ':'))
             | `Key (`Enter, _) -> 
                   begin match selected with
-                  | Selected.Item (selected_filter, selected_item) ->
-                        let items = Filter.apply selected_filter items in
-                        NavigationMsg (ToDetail (Item.(Get.id selected_item), items))
+                  | Selected.Item (_selected_filter, selected_item) ->
+                        NavigationMsg (ToDetail (Item.(Get.id selected_item)))
                   | _ -> NavigationMsg Nothing
                   end
             | _ -> NavigationMsg Nothing
       end
 
-let draw_detail items textarea =
+let draw_detail _items textarea =
       let view = UIDetailPage.draw textarea in
       Notty_unix.Term.image term view;
 
@@ -213,7 +213,7 @@ let draw_detail items textarea =
             | `Key (`Enter, _) -> DetailMsg (Input Textarea.(TypeChar '\n'))
             | `Key (`Tab, _) -> DetailMsg SaveItem
             (* navigation *)
-            | `Key (`Escape, _) -> NavigationMsg (ToView items)
+            | `Key (`Escape, _) -> NavigationMsg ToView
             | _ -> NavigationMsg Nothing
 
 let draw = function

@@ -1,5 +1,4 @@
 open Entities
-open Utils
 open For_ui
 
 type t = {
@@ -17,6 +16,7 @@ let empty = {
 }
 
 type msg = 
+      | Init
       | NextItem
       | PrevItem
       | NextFilter
@@ -26,52 +26,62 @@ type msg =
       | Input of Input.msg
       | AddItem of string
 
-let shift_filter shift {items; filters; selected; input} =
-      let selected =
-            selected
-            |> Selected.shift_filter filters shift
-      in
-      {items; filters; selected; input}
+module Make (Api: Api_type.T) = struct
 
-let shift_item shift {items; filters; selected; input} =
-      let selected =
-            selected
-            |> Selected.shift_item items shift
-      in
-      {items; filters; selected; input}
+      let shift_filter shift {items; filters; selected; input} =
+            let selected =
+                  selected
+                  |> Selected.shift_filter filters shift
+            in
+            {items; filters; selected; input}
 
-(* TODO: accept module for eq?*)
-let filter_out_element eq x = List.filter ((eq x) >> not)
+      let shift_item shift {items; filters; selected; input} =
+            let selected =
+                  selected
+                  |> Selected.shift_item items shift
+            in
+            {items; filters; selected; input}
 
-let delete_item item {items; filters; selected; _} = 
-      let items = filter_out_element Item.eq item items in
-      let selected = Selected.normalize filters items selected in
-      let input = Input.empty in
-      {items; filters; selected; input}
+      let delete_item (item: Item.t) {filters; selected; _} = 
+            let _  = Api.ItemApi.delete item.id in
+            let items = Api.ItemApi.get_all () in
+            let selected = Selected.normalize filters items selected in
+            let input = Input.empty in
+            {items; filters; selected; input}
 
-let delete_filter filter {items; filters; selected; _} = 
-      let filters = filter_out_element Filter.eq filter filters in
-      let selected = Selected.normalize filters items selected in
-      let input = Input.empty in
-      {items; filters; selected; input}
+      let delete_filter (filter: Filter.t) {items; selected; _} = 
+            let _ = Api.FilterApi.delete filter.id in
+            let filters = Api.FilterApi.get_all () in
+            let selected = Selected.normalize filters items selected in
+            let input = Input.empty in
+            {items; filters; selected; input}
 
-let add_item title {items; filters; selected; _} =
-      let item = Item.make title "" in
-      let items = item :: items in
-      let input = Input.empty in
-      {items; filters; selected; input}
+      let add_item title {filters; selected; _} =
+            let item = Item.make title "" in
+            let _ = Api.ItemApi.add_or_replace item in
+            let items = Api.ItemApi.get_all () in
+            let input = Input.empty in
+            {items; filters; selected; input}
 
-let change_input msg {items; filters; selected; input} = 
-      let input = Input.update msg input in
-      {items; filters; selected; input}
+      let change_input msg {items; filters; selected; input} = 
+            let input = Input.update msg input in
+            {items; filters; selected; input}
 
-let update = function
-      | DeleteItem item -> delete_item item
-      | DeleteFilter filter -> delete_filter filter
-      | AddItem title -> add_item title
-      | NextFilter -> shift_filter 1
-      | PrevFilter -> shift_filter (-1)
-      | NextItem -> shift_item 1
-      | PrevItem -> shift_item (-1)
-      | Input msg -> change_input msg
+      let init _t = 
+            let items = Api.ItemApi.get_all () in
+            let filters = Api.FilterApi.get_all () @ [Filter.empty] in
+            let selected = Selected.empty in
+            let input = Input.empty in
+            { items; filters; selected; input }
 
+      let update = function
+            | Init -> init
+            | DeleteItem item -> delete_item item
+            | DeleteFilter filter -> delete_filter filter
+            | AddItem title -> add_item title
+            | NextFilter -> shift_filter 1
+            | PrevFilter -> shift_filter (-1)
+            | NextItem -> shift_item 1
+            | PrevItem -> shift_item (-1)
+            | Input msg -> change_input msg
+end

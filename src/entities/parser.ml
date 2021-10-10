@@ -1,21 +1,6 @@
-open Utils
+let item_of_tup3 (id, title, body) = Item.make ~id:id title body
 
-let item_of_strings = function
-      | title :: description :: _ ->
-            Item.make title description
-      | title :: _ ->
-            Item.make title ""
-      | _ ->
-            Item.empty
-
-let strings_of_item item =
-      let title = Item.Get.title item in
-      let body = Item.Get.body item in
-      let tags =
-            Item.Get.tags item
-            |> String.concat "\n"
-      in
-      [title;body;tags]
+let filter_of_tup2 (id, title) = Filter.make ~id:id title
 
 let item_of_string str = match String.split_on_char '\n' str with
       | [] ->
@@ -37,24 +22,8 @@ let string_of_rule = function
       | Filter.All -> "*"
       | Filter.WithTags tags ->
             tags
-            |> List.map (fun tag -> Printf.sprintf "+%s" tag)
+            |> List.map Tag.as_string
             |> String.concat ","
-
-let rule_of_string = function
-      | "*" -> Filter.All
-      | tags -> Filter.WithTags (
-            tags
-            |> String.split_on_char ','
-            |> List.map (
-                  String.to_seq
-                  >> List.of_seq
-                  >> (function
-                     | '+' :: tail ->
-                           let tail = List.to_seq tail |> String.of_seq in
-                           tail
-                     | _ -> "")
-            )
-      )
 
 let string_of_filter filter =
     let title = Filter.Get.title filter in
@@ -64,28 +33,22 @@ let string_of_filter filter =
     in
     String.concat "\n" [title; rule]
 
-let filter_of_string str = match String.split_on_char '\n' str with
-      | [] -> Filter.empty
-      | title :: [] -> Filter.(make title All)
-      | title :: rule :: _ ->
-            let rule = rule_of_string rule in
-            Filter.make title rule
+let filter_of_string str = Filter.make str
 
 let of_file filename =
       let items =
             Csv.load filename
-            |> List.map item_of_strings
+            |> List.map (function
+                  | title :: body :: _ -> Item.make title body
+                  | title ::  _ -> Item.make title ""
+                  |  _ -> Item.make "" ""
+            )
       in
-      let filters = [
-            Filter.empty;
-            Filter.(make "---filter #tag" (WithTags ["#tag"]));
-            Filter.(make "---filter #tag3" (WithTags ["#tag3"]));
-      ]
-      in
+      let filters = [ ] in
       items, filters
 
 let to_file filename items =
       items
-      |> List.map strings_of_item
+      |> List.map (fun item -> [string_of_item item])
       |> Csv.save filename
 
