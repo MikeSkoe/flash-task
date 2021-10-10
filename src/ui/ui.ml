@@ -47,11 +47,6 @@ end
 
 module UIItem = struct
       let draw is_folder_selected selected item =
-            let tags =
-                  Item.Get.tags item
-                  |> List.map UITag.draw
-                  |> I.hcat
-            in
             let style = match (is_folder_selected, selected) with
                   | (true, Selected.Item (_, selected_item)) when Item.eq selected_item item -> UINode.Selected
                   | _ -> UINode.Normal
@@ -60,7 +55,7 @@ module UIItem = struct
                   Item.Get.title item
                   |> UINode.(text style)
             in
-            I.(title <-> tags)
+            title
 end
 
 module UIFilter = struct
@@ -107,23 +102,19 @@ module UIViewPage = struct
 end
 
 module UIDetailPage = struct
+      let image_of_title chr = function
+            | 0 -> UINode.(editable chr Normal)
+            | _ -> UINode.(text Normal)
+
+      let image_of_body chr line =
+            List.mapi (fun index str ->
+                  if index + 1 = line
+                  then UINode.(editable chr Normal str)
+                  else UINode.(text Normal str)
+            )
+            >> I.vcat
+
       let draw ({pos; data}: Textarea.t) = 
-            let image_of_title chr = function
-                  | 0 -> UINode.(editable chr Normal)
-                  | _ -> UINode.(text Normal)
-            in
-            let image_of_tags chr = function
-                  | 1 -> UINode.(editable chr Secondary)
-                  | _ -> UINode.(text Secondary)
-            in
-            let image_of_body chr line =
-                  List.mapi (fun index str ->
-                        if index + 2 = line
-                        then UINode.(editable chr Normal str)
-                        else UINode.(text Normal str)
-                  )
-                  >> I.vcat
-            in
             match String.split_on_char '\n' data with
             | [] ->
                   I.empty
@@ -132,19 +123,12 @@ module UIDetailPage = struct
                   let (chr, line) = pos in
                   let title = image_of_title chr line title in 
                   title
-            | title :: tags :: []
-            | title :: tags :: "" :: [] ->
+            | title :: body ->
                   let (chr, line) = pos in
                   let title = image_of_title chr line title in 
-                  let tags = image_of_tags chr line tags in
-                  I.(title <-> tags)
-            | title :: tags :: body ->
-                  let (chr, line) = pos in
-                  let title = image_of_title chr line title in 
-                  let tags = image_of_tags chr line tags in
                   let divider = UINode.(text Secondary "-----") in
                   let body = image_of_body chr line body in
-                  I.(title <-> tags <-> divider <-> body)
+                  I.(title <-> divider <-> body)
 end
 
 let draw_view items filters selected input =
@@ -219,4 +203,3 @@ let draw_detail _items textarea =
 let draw = function
       | Detail {items; textarea; _} -> draw_detail items textarea
       | View {items; filters; selected; input} -> draw_view items filters selected input
-
