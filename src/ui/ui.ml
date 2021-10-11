@@ -46,9 +46,9 @@ module UITag = struct
 end
 
 module UIItem = struct
-      let draw is_folder_selected selected item =
+      let draw is_folder_selected selected index item =
             let style = match (is_folder_selected, selected) with
-                  | (true, Selected.Item (_, selected_item)) when Item.eq selected_item item -> UINode.Selected
+                  | (true, Selected.(Index _, Index ii)) when ii = index -> UINode.Selected
                   | _ -> UINode.Normal
             in
             let title =
@@ -59,16 +59,15 @@ module UIItem = struct
 end
 
 module UIFilter = struct
-      let draw items selected filter =
+      let draw items selected index filter =
             let is_selected = match selected with
-                  | Selected.Filter selected_filter when Filter.eq selected_filter filter -> true
-                  | Selected.Item (selected_filter, _) when Filter.eq selected_filter filter -> true
+                  | Selected.(Index fi, Index _) when fi = index -> true
                   | _ -> false
             in
             let items =
                   items
                   |> Filter.apply filter
-                  |> List.map @@ UIItem.draw is_selected selected
+                  |> List.mapi @@ UIItem.draw is_selected selected
                   |> I.vcat 
             in
             let title =
