@@ -13,73 +13,84 @@ let use_or_fail exp =
 module type API = sig
       type t
 
+      val last_id: unit -> int
       val create_table: unit -> unit
       val get_all: unit -> t list
       val add_or_replace: t -> unit
       val delete: int -> unit
 end
 
-module Api = struct
-      (* generate Iterm and Filter Api's from module functor *)
-      module ItemApi: API with type t = Item.t = struct
-            module Q = Query.ItemQuery
+(* generate Iterm and Filter Api's from module functor *)
+module ItemApi: API with type t = Item.t = struct
+      module Q = Query.ItemQuery
 
-            type t = Item.t
+      type t = Item.t
 
-            let create_table () =
-                  (fun (module CON: Caqti_blocking.CONNECTION) ->
-                        CON.exec Q.create_table ()
-                  )
-                  |> use_or_fail
+      let last_id () =
+            (fun (module CON: Caqti_blocking.CONNECTION) ->
+                  CON.find Q.last_id ()
+            )
+            |> use_or_fail
 
-            let get_all () =
-                  let item_of_tup3 (id, title, body) = Item.make ~id:id title body in
-                  (fun (module CON: Caqti_blocking.CONNECTION) ->
-                        CON.fold Q.get_all (item_of_tup3 >> List.cons) () []
-                  )
-                  |> use_or_fail
+      let create_table () =
+            (fun (module CON: Caqti_blocking.CONNECTION) ->
+                  CON.exec Q.create_table ()
+            )
+            |> use_or_fail
 
-            let add_or_replace (item: t) =
-                  (fun (module CON: Caqti_blocking.CONNECTION) ->
-                        CON.exec Q.add_or_replace (item.id, item.title, item.body)
-                  )
-                  |> use_or_fail
-            
-            let delete id =
-                  (fun (module CON: Caqti_blocking.CONNECTION) ->
-                        CON.exec Q.delete id
-                  )
-                  |> use_or_fail
-      end
+      let get_all () =
+            let item_of_tup3 (id, title, body) = Item.make ~id ~title ~body () in
+            (fun (module CON: Caqti_blocking.CONNECTION) ->
+                  CON.fold Q.get_all (item_of_tup3 >> List.cons) () []
+            )
+            |> use_or_fail
 
-      module FilterApi: API with type t = Filter.t = struct
-            module Q = Query.FilterQuery
+      let add_or_replace (item: t) =
+            (fun (module CON: Caqti_blocking.CONNECTION) ->
+                  CON.exec Q.add_or_replace (item.id, item.title, item.body)
+            )
+            |> use_or_fail
+      
+      let delete id =
+            (fun (module CON: Caqti_blocking.CONNECTION) ->
+                  CON.exec Q.delete id
+            )
+            |> use_or_fail
+end
 
-            type t = Filter.t
+module FilterApi: API with type t = Filter.t = struct
+      module Q = Query.FilterQuery
 
-            let create_table () =
-                  (fun (module CON: Caqti_blocking.CONNECTION) ->
-                        CON.exec Q.create_table ()
-                  )
-                  |> use_or_fail
-            
-            let get_all () =
-                  let filter_of_tup2 (id, title) = Filter.make ~id:id title in
-                  (fun (module CON: Caqti_blocking.CONNECTION) ->
-                        CON.fold Q.get_all (filter_of_tup2 >> List.cons) () []
-                  )
-                  |> use_or_fail
+      type t = Filter.t
 
-            let add_or_replace (filter: t) =
-                  (fun (module CON: Caqti_blocking.CONNECTION) ->
-                        CON.exec Q.add_or_replace (filter.id, filter.title)
-                  )
-                  |> use_or_fail
-            
-            let delete id =
-                  (fun (module CON: Caqti_blocking.CONNECTION) ->
-                        CON.exec Q.delete id
-                  )
-                  |> use_or_fail
-      end
+      let last_id () =
+            (fun (module CON: Caqti_blocking.CONNECTION) ->
+                  CON.find Q.last_id ()
+            )
+            |> use_or_fail
+
+      let create_table () =
+            (fun (module CON: Caqti_blocking.CONNECTION) ->
+                  CON.exec Q.create_table ()
+            )
+            |> use_or_fail
+      
+      let get_all () =
+            let filter_of_tup2 (id, title) = Filter.make ~id ~title () in
+            (fun (module CON: Caqti_blocking.CONNECTION) ->
+                  CON.fold Q.get_all (filter_of_tup2 >> List.cons) () []
+            )
+            |> use_or_fail
+
+      let add_or_replace (filter: t) =
+            (fun (module CON: Caqti_blocking.CONNECTION) ->
+                  CON.exec Q.add_or_replace (filter.id, filter.title)
+            )
+            |> use_or_fail
+      
+      let delete id =
+            (fun (module CON: Caqti_blocking.CONNECTION) ->
+                  CON.exec Q.delete id
+            )
+            |> use_or_fail
 end

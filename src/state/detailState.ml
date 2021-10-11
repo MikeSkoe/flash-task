@@ -41,8 +41,7 @@ module Make (Api: Api_type.T) = struct
       let save_item {id; textarea; _} =
             let item =
                   textarea.data
-                  |> Parser.item_of_string 
-                  |> Item.Set.id id
+                  |> Parser.item_of_string id
             in
             let _ = Api.ItemApi.add_or_replace item in
             let items = Api.ItemApi.get_all () in

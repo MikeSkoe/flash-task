@@ -2,6 +2,11 @@ module R = Caqti_request
 module T = Caqti_type
 
 module ItemQuery = struct
+      let last_id = R.find
+            T.unit
+            T.int
+            " SELECT max(id) from items "
+
       let create_table = R.exec
             T.unit
             "
@@ -36,6 +41,11 @@ module ItemQuery = struct
 end
 
 module FilterQuery = struct
+      let last_id = R.find
+            T.unit
+            T.int
+            " SELECT max(id) from filters "
+
       let create_table = R.exec
             T.unit
             "

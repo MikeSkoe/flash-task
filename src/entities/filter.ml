@@ -11,18 +11,14 @@ type t = {
       rule: rule;
 }
 
-let make ?id:(id=Id.get_next()) title =
+let make ?id:(id=Id.get_next ()) ~title () =
       let rule = match Tag.tags_of_string title with
             | [] -> All
             | tags -> WithTags tags
       in
       { title; rule; id }
 
-let empty = {
-    title="all items";
-    rule=All;
-    id=Id.empty;
-}
+let empty = make ~id:Id.empty ~title:"all items" ()
 
 module Get = struct
       let title {title; _} = title

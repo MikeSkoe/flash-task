@@ -19,11 +19,11 @@ module Set = struct
       let tags tags t = {t with tags}
 end
 
-let make ?id:(id=Id.get_next()) title body =
+let make ?id:(id=Id.get_next ()) ~title ~body () =
       let tags = Tag.tags_of_string title in
       { title; tags; body; id } 
 
-let empty = make "" ""
+let empty = make ~id:1 ~title:"" ~body:"" ()
 
 (* Checkers *)
 let has_tag tag = Get.tags >> List.exists @@ (=) tag
@@ -31,3 +31,4 @@ let has_tag tag = Get.tags >> List.exists @@ (=) tag
 let has_no_tag = Get.tags >> (=) []
 
 let eq a b = a.id = b.id
+

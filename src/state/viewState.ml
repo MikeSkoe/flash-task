@@ -57,7 +57,8 @@ module Make (Api: Api_type.T) = struct
             {items; filters; selected; input}
 
       let add_item title {filters; selected; _} =
-            let item = Item.make title "" in
+            let last_id = Api.ItemApi.last_id () in
+            let item = Item.make ~id:(last_id + 1) ~title ~body:"" () in
             let _ = Api.ItemApi.add_or_replace item in
             let items = Api.ItemApi.get_all () in
             let input = Input.empty in

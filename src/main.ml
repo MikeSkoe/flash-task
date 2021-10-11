@@ -1,4 +1,4 @@
-module State' = State.Make (Db.Api)
+module State' = State.Make (Db)
 
 let rec loop state msg =
       match msg with
