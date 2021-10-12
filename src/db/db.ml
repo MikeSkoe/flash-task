@@ -10,27 +10,33 @@ let use_or_fail exp =
       Caqti_blocking.Pool.use exp pool
       |> Caqti_blocking.or_fail
 
-module type API = sig
+module type BASE_API = sig
       type t
+      type tup
 
       val last_id: unit -> int
       val create_table: unit -> unit
       val get_all: unit -> t list
-      val add_or_replace: t -> unit
+      val add_or_replace: tup -> t list
       val delete: int -> unit
 end
 
-(* generate Iterm and Filter Api's from module functor *)
-module ItemApi: API with type t = Item.t = struct
-      module Q = Query.ItemQuery
+module type BASE_API_QUERY = sig
+      type t
+      type tup
 
-      type t = Item.t
+      val map: tup -> t
 
-      let last_id () =
-            (fun (module CON: Caqti_blocking.CONNECTION) ->
-                  CON.find Q.last_id ()
-            )
-            |> use_or_fail
+      val last_id : (unit, int, [< `Many | `One | `Zero > `One ]) Caqti_request.t
+      val create_table : (unit, unit, [< `Many | `One | `Zero > `Zero ]) Caqti_request.t
+      val get_all : (unit, tup, [ `Many | `One | `Zero ]) Caqti_request.t
+      val add_or_replace : (tup, unit, [< `Many | `One | `Zero > `Zero ]) Caqti_request.t
+      val delete : (int, unit, [< `Many | `One | `Zero > `Zero ]) Caqti_request.t
+end
+
+module BaseApi (Q: BASE_API_QUERY): BASE_API = struct
+      type t = Q.t
+      type tup = Q.tup
 
       let create_table () =
             (fun (module CON: Caqti_blocking.CONNECTION) ->
@@ -38,16 +44,22 @@ module ItemApi: API with type t = Item.t = struct
             )
             |> use_or_fail
 
-      let get_all () =
-            let item_of_tup3 (id, title, body) = Item.make ~id ~title ~body () in
+      let last_id () =
             (fun (module CON: Caqti_blocking.CONNECTION) ->
-                  CON.fold Q.get_all (item_of_tup3 >> List.cons) () []
+                  CON.find Q.last_id ()
             )
             |> use_or_fail
 
-      let add_or_replace (item: t) =
+      let get_all () =
             (fun (module CON: Caqti_blocking.CONNECTION) ->
-                  CON.exec Q.add_or_replace (item.id, item.title, item.body)
+                  CON.fold Q.get_all (Q.map >> List.cons) () []
+            )
+            |> use_or_fail
+
+      let add_or_replace tup =
+            (fun (module CON: Caqti_blocking.CONNECTION) ->
+                  let _ = CON.exec Q.add_or_replace tup in
+                  CON.fold Q.get_all (Q.map >> List.cons) () []
             )
             |> use_or_fail
       
@@ -58,39 +70,28 @@ module ItemApi: API with type t = Item.t = struct
             |> use_or_fail
 end
 
-module FilterApi: API with type t = Filter.t = struct
-      module Q = Query.FilterQuery
+(* TODO: generate Iterm and Filter Api's from module functor *)
+module ItemApi = struct
+      module Query = struct
+            include Query.ItemQuery
 
-      type t = Filter.t
+            type t = Item.t
+            type tup = int * string * string
 
-      let last_id () =
-            (fun (module CON: Caqti_blocking.CONNECTION) ->
-                  CON.find Q.last_id ()
-            )
-            |> use_or_fail
+            let map (id, title, body) = Item.make ~id ~title ~body ()
+      end
 
-      let create_table () =
-            (fun (module CON: Caqti_blocking.CONNECTION) ->
-                  CON.exec Q.create_table ()
-            )
-            |> use_or_fail
-      
-      let get_all () =
-            let filter_of_tup2 (id, title) = Filter.make ~id ~title () in
-            (fun (module CON: Caqti_blocking.CONNECTION) ->
-                  CON.fold Q.get_all (filter_of_tup2 >> List.cons) () []
-            )
-            |> use_or_fail
-
-      let add_or_replace (filter: t) =
-            (fun (module CON: Caqti_blocking.CONNECTION) ->
-                  CON.exec Q.add_or_replace (filter.id, filter.title)
-            )
-            |> use_or_fail
-      
-      let delete id =
-            (fun (module CON: Caqti_blocking.CONNECTION) ->
-                  CON.exec Q.delete id
-            )
-            |> use_or_fail
+      include BaseApi (Query)
 end
+
+module FilterApi = struct
+      include BaseApi (struct
+            include Query.FilterQuery
+
+            type t = Filter.t
+            type tup = int * string
+
+            let map (id, title) = Filter.make ~id ~title ()
+      end)
+end
+

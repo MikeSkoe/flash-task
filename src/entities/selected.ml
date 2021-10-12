@@ -8,7 +8,7 @@ let empty = Index 0, Index 0
 
 let normalize_index xs =
       max 0
-      >> min List.(length xs)
+      >> min List.((length xs) - 1)
 
 let shift_filter filters shift (Index fi, Index ii) =
       let fi = normalize_index filters (fi + shift) in

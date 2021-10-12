@@ -46,10 +46,11 @@ module UITag = struct
 end
 
 module UIItem = struct
-      let draw is_folder_selected selected index item =
-            let style = match (is_folder_selected, selected) with
-                  | (true, Selected.(Index _, Index ii)) when ii = index -> UINode.Selected
-                  | _ -> UINode.Normal
+      let draw item is_selected =
+            let style =
+                  if is_selected
+                  then UINode.Selected
+                  else UINode.Normal
             in
             let title =
                   Item.Get.title item
@@ -59,45 +60,32 @@ module UIItem = struct
 end
 
 module UIFilter = struct
-      let draw items selected index filter =
-            let is_selected = match selected with
-                  | Selected.(Index fi, Index _) when fi = index -> true
-                  | _ -> false
-            in
-            let items =
-                  items
-                  |> Filter.apply filter
-                  |> List.mapi @@ UIItem.draw is_selected selected
-                  |> I.vcat 
-            in
+      let draw filter is_selected =
             let title =
                   Filter.Get.title filter
                   |> UINode.(text (if is_selected then Underline else Normal))
             in
-            let rule =
-                  Filter.Get.rule filter
-                  |> Parser.string_of_rule
-                  |> UINode.(text Secondary)
-                  |> I.pad ~b:1
-            in
-            I.(title <-> rule <-> items)
+            title
 end
 
 module UIViewPage = struct
       let is_editing ({text; _}: Input.t) = not (text = "")
 
-      let draw items filters selected ({chr; text}: Input.t) width = 
+      let draw items filters (Selected.(Index fi, Index ii)) ({chr; text}: Input.t) = 
             let input = UINode.(editable chr Normal) text in
+            let items =
+                  items
+                  |> List.mapi (fun i item -> UIItem.draw item (i = ii))
+                  |> I.vcat 
+            in
             let filters =
                   filters
-                  |> List.map @@ (
-                        UIFilter.draw items selected
-                        >> I.hsnap ~align:`Left (width / 3)
-                        >> I.pad ~r:3
-                  )
-                  |> I.hcat
+                  |> List.mapi (fun i filter -> UIFilter.draw filter (i = fi)) 
+                  |> List.map @@ (I.pad ~r:3)
+                  |> I.vcat
             in
-            I.(input <-> filters)
+            I.(input <->
+                  (filters <|> items))
 end
 
 module UIDetailPage = struct
@@ -131,8 +119,7 @@ module UIDetailPage = struct
 end
 
 let draw_view items filters selected input =
-      let (width, _) = Notty_unix.Term.size term in
-      let view = UIViewPage.draw items filters selected input width in
+      let view = UIViewPage.draw items filters selected input in
       Notty_unix.Term.image term view;
       let event = Notty_unix.Term.event term in
 
@@ -143,10 +130,18 @@ let draw_view items filters selected input =
                   begin match String.split_on_char ' ' input.text with
                   | ":delete"::_ ->
                         begin match selected with
-                        | Selected.Item (_filter, item) -> ViewMsg (DeleteItem item)
-                        | Selected.Filter filter -> ViewMsg (DeleteFilter filter)
+                        | Selected.(Index _fi, Index ii) ->
+                              try ViewMsg (DeleteItem List.(nth items ii))
+                              with Failure _ -> NavigationMsg Nothing
+                        end
+                  | ":delete_filter"::_ ->
+                        begin match selected with
+                        | Selected.(Index fi, Index _ii) ->
+                              try ViewMsg (DeleteFilter List.(nth filters fi))
+                              with Failure _ -> NavigationMsg Nothing
                         end
                   | ":add"::text -> ViewMsg (AddItem String.(concat " " text))
+                  | ":add_filter"::text -> ViewMsg (AddFilter String.(concat " " text))
                   | ":quit"::_ -> NavigationMsg Quit
                   | _ -> NavigationMsg Nothing
                   end
@@ -168,14 +163,15 @@ let draw_view items filters selected input =
             | `Key (`ASCII ':', _) -> ViewMsg (Input Input.(TypeChar ':'))
             | `Key (`Enter, _) -> 
                   begin match selected with
-                  | Selected.Item (_selected_filter, selected_item) ->
-                        NavigationMsg (ToDetail (Item.(Get.id selected_item)))
+                  | Selected.(Index _fi, Index ii) when ii >= 0 ->
+                        let item = List.nth items ii in
+                        NavigationMsg (ToDetail item.id)
                   | _ -> NavigationMsg Nothing
                   end
             | _ -> NavigationMsg Nothing
       end
 
-let draw_detail _items textarea =
+let draw_detail textarea =
       let view = UIDetailPage.draw textarea in
       Notty_unix.Term.image term view;
 
@@ -183,8 +179,6 @@ let draw_detail _items textarea =
             (* ui movement *)
             | `Key (`Arrow direction, modificators) ->
                   begin match direction, modificators with
-                  | `Right, [`Shift] -> DetailMsg NextItem
-                  | `Left, [`Shift] -> DetailMsg PrevItem
                   | `Left, _ -> DetailMsg (Input Textarea.(ShiftCursor (-1, 0)))
                   | `Right, _ -> DetailMsg (Input Textarea.(ShiftCursor (1, 0)))
                   | `Up, _ -> DetailMsg (Input Textarea.(ShiftCursor (0, -1)))
@@ -200,5 +194,6 @@ let draw_detail _items textarea =
             | _ -> NavigationMsg Nothing
 
 let draw = function
-      | Detail {items; textarea; _} -> draw_detail items textarea
+      | Detail {textarea; _} -> draw_detail textarea
       | View {items; filters; selected; input} -> draw_view items filters selected input
+

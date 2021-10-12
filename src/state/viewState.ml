@@ -25,6 +25,7 @@ type msg =
       | DeleteFilter of Filter.t
       | Input of Input.msg
       | AddItem of string
+      | AddFilter of string
 
 module Make (Api: Api_type.T) = struct
 
@@ -64,13 +65,21 @@ module Make (Api: Api_type.T) = struct
             let input = Input.empty in
             {items; filters; selected; input}
 
+      let add_filter title {items; selected; _} =
+            let last_id = Api.ItemApi.last_id () in
+            let filter = Filter.make ~id:(last_id + 1) ~title () in
+            let _ = Api.FilterApi.add_or_replace filter in
+            let filters = Api.FilterApi.get_all () in
+            let input = Input.empty in
+            {items; filters; selected; input}
+
       let change_input msg {items; filters; selected; input} = 
             let input = Input.update msg input in
             {items; filters; selected; input}
 
       let init _t = 
             let items = Api.ItemApi.get_all () in
-            let filters = Api.FilterApi.get_all () @ [Filter.empty] in
+            let filters = Api.FilterApi.get_all () in
             let selected = Selected.empty in
             let input = Input.empty in
             { items; filters; selected; input }
@@ -80,6 +89,7 @@ module Make (Api: Api_type.T) = struct
             | DeleteItem item -> delete_item item
             | DeleteFilter filter -> delete_filter filter
             | AddItem title -> add_item title
+            | AddFilter title -> add_filter title
             | NextFilter -> shift_filter 1
             | PrevFilter -> shift_filter (-1)
             | NextItem -> shift_item 1
