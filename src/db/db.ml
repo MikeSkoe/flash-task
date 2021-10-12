@@ -34,10 +34,7 @@ module type BASE_API_QUERY = sig
       val delete : (int, unit, [< `Many | `One | `Zero > `Zero ]) Caqti_request.t
 end
 
-module BaseApi (Q: BASE_API_QUERY): BASE_API = struct
-      type t = Q.t
-      type tup = Q.tup
-
+module BaseApi (Q: BASE_API_QUERY): BASE_API with type t := Q.t and type tup := Q.tup = struct
       let create_table () =
             (fun (module CON: Caqti_blocking.CONNECTION) ->
                   CON.exec Q.create_table ()
@@ -85,13 +82,15 @@ module ItemApi = struct
 end
 
 module FilterApi = struct
-      include BaseApi (struct
+      module Query = struct
             include Query.FilterQuery
 
             type t = Filter.t
             type tup = int * string
 
             let map (id, title) = Filter.make ~id ~title ()
-      end)
+      end
+
+      include BaseApi (Query)
 end
 
