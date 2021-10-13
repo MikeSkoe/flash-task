@@ -71,7 +71,7 @@ module ItemApi = struct
 
       let get_via_filter filter =
             (fun (module CON: Caqti_blocking.CONNECTION) ->
-                  CON.fold Q.get_via_filter (Q.t_of_tup >> List.cons) () []
+                  CON.fold Query.ItemQuery.(get_via_filter filter) Query.ItemQuery.(t_of_tup >> List.cons) () []
             )
             |> use_or_fail
 end

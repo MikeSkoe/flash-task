@@ -29,11 +29,16 @@ type msg =
 
 module Make (Api: Api_type.T) = struct
 
-      let shift_filter shift {items; filters; selected; input} =
+      let shift_filter shift {filters; selected; input; _} =
             let selected =
                   selected
                   |> Selected.shift_filter filters shift
             in
+            let cur_filter =
+                  match selected with
+                  | Selected.(Index fi, Index _ii) -> List.nth filters fi
+            in
+            let items = Api.ItemApi.get_via_filter cur_filter  in
             {items; filters; selected; input}
 
       let shift_item shift {items; filters; selected; input} =
@@ -78,9 +83,9 @@ module Make (Api: Api_type.T) = struct
             {items; filters; selected; input}
 
       let init _t = 
-            let items = Api.ItemApi.get_all () in
-            let filters = Filter.empty :: Api.FilterApi.get_all () in
             let selected = Selected.empty in
+            let filters = Filter.empty :: Api.FilterApi.get_all () in
+            let items = Api.ItemApi.get_via_filter Filter.empty in
             let input = Input.empty in
             { items; filters; selected; input }
 

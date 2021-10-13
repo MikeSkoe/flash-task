@@ -34,7 +34,7 @@ module ItemQuery = struct
             "
 
       let get_via_filter (filter: Filter.t) =
-          let tags = match filter.tags with
+          let tags = match filter.rule with
               | Filter.All -> []
               | Filter.WithTags tags -> tags
           in
@@ -42,17 +42,17 @@ module ItemQuery = struct
               | [] -> ""
               | tags ->
                   tags
-                  |> List.map (fun tag -> Printf.sprintf "title LIKE *%s*" tag)
+                  |> List.map (fun tag -> Printf.sprintf "title LIKE \'%%%s%%\'" Tag.(as_string tag))
                   |> String.concat " OR "
                   |> (^) " WHERE "
           in
           R.collect
             T.unit
             T.(tup3 int string string)
-            "
+            ("
                   SELECT id, title, body
                   FROM items
-            " + str
+            " ^ str)
 
       let add_or_replace = R.exec
             T.(tup3 int string string)
