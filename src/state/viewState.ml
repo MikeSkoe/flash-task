@@ -27,8 +27,47 @@ type msg =
       | AddItem of string
       | AddFilter of string
 
-module Make (Api: Api_type.T) = struct
+(*
+ * type setter: arg -> st * 'a -> st
+ * type getter: st * 'a -> st
+ *
+ * let set_st_ii =
+ *     get_arg >>= fun shift ->
+ *     get_ii >>= fun ii ->
+ *     get_items >>= fun items ->
+ *     let ii =
+ *         (ii + shift)
+ *         |> max 0
+ *         |> min List.(length items - 1)
+ *     in
+ *     set_ii ii;;
+ *)
 
+module Get = struct
+      let get_items ({items; _}, _) = items;
+end
+
+module Set = struct
+      module S = Utils.Select
+      let (>>=) = S.(>>=)
+
+      let set_selected selected (st, _) = { st with selected }
+
+      let shift_item shift {items; filters; selected; input} =
+            let selected =
+                  selected
+                  |> Selected.shift_item items shift
+            in
+            {items; filters; selected; input}
+
+      let shift_item =
+            S.get_arg >>= fun shift ->
+            get_items >>= fun items ->
+            get_ii >>= fun ii ->
+            let ii = 
+end
+
+module Make (Api: Api_type.T) = struct
       let shift_filter shift {filters; selected; input; _} =
             let selected =
                   selected
@@ -101,3 +140,4 @@ module Make (Api: Api_type.T) = struct
             | PrevItem -> shift_item (-1)
             | Input msg -> change_input msg
 end
+

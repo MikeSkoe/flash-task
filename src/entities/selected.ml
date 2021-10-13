@@ -6,6 +6,19 @@ type t = Filter.t index_type * Item.t index_type
 
 let empty = Index 0, Index 0
 
+module Set = struct
+      module S = Utils.Select
+      let (>>=) = S.(>>=)
+
+      let set_ii ii ((Index fi, Index _), _) = (Index fi, Index ii)
+      let set_fi fi ((Index _, Index ii), _) = (Index fi, Index ii)
+end
+
+module Get = struct
+      let get_ii ((Index _, Index ii), _) = ii
+      let get_fi ((Index fi, Index _), _) = fi
+end
+
 let normalize_index xs =
       max 0
       >> min List.((length xs) - 1)
