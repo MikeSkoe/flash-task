@@ -11,6 +11,10 @@ module type ENTITY_API = sig
 end
 
 module type T = sig
-      module ItemApi: ENTITY_API with type t := Item.t
+      module ItemApi: sig
+          include ENTITY_API with type t := Item.t
+
+          val get_with_tags: Filter.t -> Item.t list
+      end
       module FilterApi: ENTITY_API with type t := Filter.t
 end

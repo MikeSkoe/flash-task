@@ -33,6 +33,27 @@ module ItemQuery = struct
                   FROM items
             "
 
+      let get_via_filter (filter: Filter.t) =
+          let tags = match filter.tags with
+              | Filter.All -> []
+              | Filter.WithTags tags -> tags
+          in
+          let str = match tags with
+              | [] -> ""
+              | tags ->
+                  tags
+                  |> List.map (fun tag -> Printf.sprintf "title LIKE *%s*" tag)
+                  |> String.concat " OR "
+                  |> (^) " WHERE "
+          in
+          R.collect
+            T.unit
+            T.(tup3 int string string)
+            "
+                  SELECT id, title, body
+                  FROM items
+            " + str
+
       let add_or_replace = R.exec
             T.(tup3 int string string)
             "
