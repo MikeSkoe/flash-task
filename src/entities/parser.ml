@@ -13,10 +13,7 @@ let item_of_string id str = match String.split_on_char '\n' str with
             let body = String.(concat "\n" body) in
             Item.make ~id ~title ~body ()
 
-let string_of_item item =
-      let title = Item.Get.title item in
-      let body = Item.Get.body item in
-      Printf.sprintf "%s\n%s" title body
+let string_of_item (item: Item.t) = Printf.sprintf "%s\n%s" item.title item.body
 
 let string_of_rule = function
       | Filter.All -> "*"

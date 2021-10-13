@@ -1,7 +1,15 @@
+open Entities
+
 module R = Caqti_request
 module T = Caqti_type
 
 module ItemQuery = struct
+      type t = Item.t
+      type tup = int * string * string
+
+      let t_of_tup (id, title, body) = Item.make ~id ~title ~body ()
+      let tup_of_t (t: Item.t) = (t.id, t.title, t.body)
+
       let last_id = R.find
             T.unit
             T.int
@@ -41,6 +49,12 @@ module ItemQuery = struct
 end
 
 module FilterQuery = struct
+      type t = Filter.t
+      type tup = int * string
+
+      let t_of_tup (id, title) = Filter.make ~id ~title ()
+      let tup_of_t (t: Filter.t) = (t.id, t.title)
+
       let last_id = R.find
             T.unit
             T.int
@@ -78,3 +92,4 @@ module FilterQuery = struct
                   WHERE id = ?
             "
 end
+

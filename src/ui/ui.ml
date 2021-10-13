@@ -46,16 +46,13 @@ module UITag = struct
 end
 
 module UIItem = struct
-      let draw item is_selected =
+      let draw (item: Item.t) is_selected =
             let style =
                   if is_selected
                   then UINode.Selected
                   else UINode.Normal
             in
-            let title =
-                  Item.Get.title item
-                  |> UINode.(text style)
-            in
+            let title = UINode.(text style item.title) in
             title
 end
 

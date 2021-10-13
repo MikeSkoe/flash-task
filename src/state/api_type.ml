@@ -2,6 +2,8 @@ open Entities
 
 module type ENTITY_API = sig
       type t
+
+      val create_table: unit -> unit
       val last_id: unit -> int
       val get_all: unit -> t list
       val add_or_replace: t -> t list

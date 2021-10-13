@@ -52,7 +52,7 @@ module Make (Api: Api_type.T) = struct
 
       let delete_filter (filter: Filter.t) {items; selected; _} = 
             let _ = Api.FilterApi.delete filter.id in
-            let filters = Api.FilterApi.get_all () in
+            let filters = Filter.empty :: Api.FilterApi.get_all () in
             let selected = Selected.normalize filters items selected in
             let input = Input.empty in
             {items; filters; selected; input}
@@ -69,7 +69,7 @@ module Make (Api: Api_type.T) = struct
             let last_id = Api.ItemApi.last_id () in
             let filter = Filter.make ~id:(last_id + 1) ~title () in
             let _ = Api.FilterApi.add_or_replace filter in
-            let filters = Api.FilterApi.get_all () in
+            let filters = Filter.empty :: Api.FilterApi.get_all () in
             let input = Input.empty in
             {items; filters; selected; input}
 
@@ -79,7 +79,7 @@ module Make (Api: Api_type.T) = struct
 
       let init _t = 
             let items = Api.ItemApi.get_all () in
-            let filters = Api.FilterApi.get_all () in
+            let filters = Filter.empty :: Api.FilterApi.get_all () in
             let selected = Selected.empty in
             let input = Input.empty in
             { items; filters; selected; input }

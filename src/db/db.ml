@@ -1,4 +1,3 @@
-open Entities
 open Utils
 
 let connection_url = Printf.sprintf "sqlite3://%s/items.db" Sys.(getcwd ())
@@ -17,7 +16,7 @@ module type BASE_API = sig
       val last_id: unit -> int
       val create_table: unit -> unit
       val get_all: unit -> t list
-      val add_or_replace: tup -> t list
+      val add_or_replace: t -> t list
       val delete: int -> unit
 end
 
@@ -25,7 +24,8 @@ module type BASE_API_QUERY = sig
       type t
       type tup
 
-      val map: tup -> t
+      val tup_of_t: t -> tup
+      val t_of_tup: tup -> t
 
       val last_id : (unit, int, [< `Many | `One | `Zero > `One ]) Caqti_request.t
       val create_table : (unit, unit, [< `Many | `One | `Zero > `Zero ]) Caqti_request.t
@@ -42,21 +42,20 @@ module BaseApi (Q: BASE_API_QUERY): BASE_API with type t := Q.t and type tup := 
             |> use_or_fail
 
       let last_id () =
-            (fun (module CON: Caqti_blocking.CONNECTION) ->
-                  CON.find Q.last_id ()
-            )
-            |> use_or_fail
+            try (fun (module CON: Caqti_blocking.CONNECTION) -> CON.find Q.last_id ())
+                |> use_or_fail
+            with Caqti_error.Exn _ -> 1
 
       let get_all () =
             (fun (module CON: Caqti_blocking.CONNECTION) ->
-                  CON.fold Q.get_all (Q.map >> List.cons) () []
+                  CON.fold Q.get_all (Q.t_of_tup >> List.cons) () []
             )
             |> use_or_fail
 
-      let add_or_replace tup =
+      let add_or_replace t =
             (fun (module CON: Caqti_blocking.CONNECTION) ->
-                  let _ = CON.exec Q.add_or_replace tup in
-                  CON.fold Q.get_all (Q.map >> List.cons) () []
+                  let _ = CON.exec Q.add_or_replace Q.(tup_of_t t) in
+                  CON.fold Q.get_all (Q.t_of_tup >> List.cons) () []
             )
             |> use_or_fail
       
@@ -67,30 +66,11 @@ module BaseApi (Q: BASE_API_QUERY): BASE_API with type t := Q.t and type tup := 
             |> use_or_fail
 end
 
-(* TODO: generate Iterm and Filter Api's from module functor *)
 module ItemApi = struct
-      module Query = struct
-            include Query.ItemQuery
-
-            type t = Item.t
-            type tup = int * string * string
-
-            let map (id, title, body) = Item.make ~id ~title ~body ()
-      end
-
-      include BaseApi (Query)
+      include BaseApi (Query.ItemQuery)
 end
 
 module FilterApi = struct
-      module Query = struct
-            include Query.FilterQuery
-
-            type t = Filter.t
-            type tup = int * string
-
-            let map (id, title) = Filter.make ~id ~title ()
-      end
-
-      include BaseApi (Query)
+      include BaseApi (Query.FilterQuery)
 end
 

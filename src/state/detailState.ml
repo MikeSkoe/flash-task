@@ -19,12 +19,12 @@ type msg =
 module Make (Api: Api_type.T) = struct
       let rec iter_right (item: Item.t) = function
             | [] -> item
-            | head :: next :: _ when Item.Get.(id head) = item.id -> next 
+            | head :: (next: Item.t) :: _ when head.id = item.id -> next 
             | _ :: tail -> iter_right item tail 
 
       let rec iter_left (item: Item.t) = function
             | [] -> item
-            | prev :: head :: _ when Item.Get.(id head) = item.id -> prev 
+            | prev :: (head: Item.t) :: _ when head.id = item.id -> prev 
             | _ :: tail -> iter_left item tail 
 
       let save_item {id; textarea; _} =
