@@ -125,18 +125,8 @@ let draw_view items filters selected input =
             | `Key (`Escape, _) -> NavigationMsg Quit
             | `Key (`Enter, _) ->
                   begin match String.split_on_char ' ' input.text with
-                  | ":delete"::_ ->
-                        begin match selected with
-                        | Selected.(Index _fi, Index ii) ->
-                              try ViewMsg (DeleteItem List.(nth items ii))
-                              with Failure _ -> NavigationMsg Nothing
-                        end
-                  | ":delete_filter"::_ ->
-                        begin match selected with
-                        | Selected.(Index fi, Index _ii) ->
-                              try ViewMsg (DeleteFilter List.(nth filters fi))
-                              with Failure _ -> NavigationMsg Nothing
-                        end
+                  | ":delete"::_ -> ViewMsg DeleteItem
+                  | ":delete_filter"::_ -> ViewMsg DeleteFilter
                   | ":add"::text -> ViewMsg (AddItem String.(concat " " text))
                   | ":add_filter"::text -> ViewMsg (AddFilter String.(concat " " text))
                   | ":quit"::_ -> NavigationMsg Quit
