@@ -19,16 +19,13 @@ let empty = {
 type msg = 
       | Init
       (* TODO: merge to shift *)
-      | NextItem
-      | PrevItem
+      | ShiftSelected of int * int
       (* TODO: merge to shift *)
-      | NextFilter
-      | PrevFilter
       | DeleteItem
       | DeleteFilter
-      | Input of Input.msg
       | AddItem of string
       | AddFilter of string
+      | Input of Input.msg
 
 module Get = struct
       let (>>=) = Select.(>>=)
