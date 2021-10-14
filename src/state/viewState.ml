@@ -44,7 +44,9 @@ type msg =
  *)
 
 module Get = struct
-      let get_items ({items; _}, _) = items;
+      let get_items ({items; _}, _) = items
+      let get_selected ({selected; _}, _) = selected
+      let get_ii ({selected; _}, _) = Selected.Get.(ii (selected, ()))
 end
 
 module Set = struct
@@ -53,18 +55,14 @@ module Set = struct
 
       let set_selected selected (st, _) = { st with selected }
 
-      let shift_item shift {items; filters; selected; input} =
-            let selected =
-                  selected
-                  |> Selected.shift_item items shift
-            in
-            {items; filters; selected; input}
-
       let shift_item =
             S.get_arg >>= fun shift ->
-            get_items >>= fun items ->
-            get_ii >>= fun ii ->
-            let ii = 
+            Get.get_items >>= fun items ->
+            Get.get_ii >>= fun ii ->
+            Get.get_selected >>= fun selected ->
+            let ii = ii + shift |> max 0 |> min List.(length items - 1) in 
+            let selected = Selected.Set.ii ii (selected, ()) in
+            set_selected selected
 end
 
 module Make (Api: Api_type.T) = struct
@@ -80,12 +78,14 @@ module Make (Api: Api_type.T) = struct
             let items = Api.ItemApi.get_via_filter cur_filter  in
             {items; filters; selected; input}
 
+        (*
       let shift_item shift {items; filters; selected; input} =
             let selected =
                   selected
                   |> Selected.shift_item items shift
             in
             {items; filters; selected; input}
+*)
 
       let delete_item (item: Item.t) {filters; selected; _} = 
             let _  = Api.ItemApi.delete item.id in
@@ -136,8 +136,8 @@ module Make (Api: Api_type.T) = struct
             | AddFilter title -> add_filter title
             | NextFilter -> shift_filter 1
             | PrevFilter -> shift_filter (-1)
-            | NextItem -> shift_item 1
-            | PrevItem -> shift_item (-1)
+            | NextItem -> (fun st -> Set.shift_item (st, 1))
+            | PrevItem -> (fun st -> Set.shift_item (st, -1))
             | Input msg -> change_input msg
 end
 

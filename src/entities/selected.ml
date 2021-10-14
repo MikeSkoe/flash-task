@@ -7,16 +7,13 @@ type t = Filter.t index_type * Item.t index_type
 let empty = Index 0, Index 0
 
 module Set = struct
-      module S = Utils.Select
-      let (>>=) = S.(>>=)
-
-      let set_ii ii ((Index fi, Index _), _) = (Index fi, Index ii)
-      let set_fi fi ((Index _, Index ii), _) = (Index fi, Index ii)
+      let ii new_val ((Index fi, Index _), _) = (Index fi, Index new_val)
+      let fi new_val ((Index _, Index ii), _) = (Index new_val, Index ii)
 end
 
 module Get = struct
-      let get_ii ((Index _, Index ii), _) = ii
-      let get_fi ((Index fi, Index _), _) = fi
+      let ii ((Index _, Index res), _) = res
+      let fi ((Index res, Index _), _) = res
 end
 
 let normalize_index xs =
