@@ -18,9 +18,7 @@ let empty = {
 
 type msg = 
       | Init
-      (* TODO: merge to shift *)
       | ShiftSelected of int * int
-      (* TODO: merge to shift *)
       | DeleteItem
       | DeleteFilter
       | AddItem of string
@@ -34,13 +32,26 @@ module Get = struct
       let items {items; _} = items
       let filters {filters; _} = filters
       let selected {selected; _} = selected
+      let input {input; _} = input
 
       let items_len {items; _} = List.length items
       let filters_len {filters; _} = List.length filters
 
+      let fi =
+            filters_len >>= fun filters_len ->
+            (selected >> Selected.Get.fi) >>= fun fi ->
+
+            return (fi |> max 0 |> min (filters_len - 1))
+
+      let ii =
+            items_len >>= fun items_len ->
+            (selected >> Selected.Get.ii) >>= fun ii ->
+
+            return (ii |> max 0 |> min (items_len - 1))
+
       let cur_filter =
             filters >>= fun filters ->
-            (selected >> Selected.Get.fi) >>= fun fi ->
+            fi >>= fun fi ->
 
             return @@
                   try List.nth filters fi
@@ -48,7 +59,7 @@ module Get = struct
 
       let cur_item =
             items >>= fun items ->
-            (selected >> Selected.Get.ii) >>= fun ii ->
+            ii >>= fun ii ->
 
             return @@
                   try List.nth items ii
@@ -96,18 +107,14 @@ module Make (Api: Api_type.T) = struct
             let _ = Api.FilterApi.delete filter.id in
             id
 
-      let shift_item shift =
+      let shift_selected (fi, ii) =
             Get.items_len >>= fun items_len ->
-            Get.selected >>= fun selected ->
-
-            Selected.(shift_item items_len shift selected)
-                  |> Set.selected
-
-      let shift_filter shift =
             Get.filters_len >>= fun filters_len ->
             Get.selected >>= fun selected ->
 
-            Selected.(shift_filter filters_len shift selected)
+            selected
+                |> Selected.(shift_filter filters_len fi)
+                |> Selected.(shift_item items_len ii)
                 |> Set.selected
 
       let update_filters st =
@@ -123,12 +130,10 @@ module Make (Api: Api_type.T) = struct
             | Init -> init
             | DeleteItem -> delete_item
                   >> update_items
-                  >> shift_item 0
                   >> Set.input Input.empty
             | DeleteFilter -> delete_filter
                   >> update_filters
                   >> update_items
-                  >> shift_item 0
                   >> Set.input Input.empty
             | AddItem title -> add_item title
                   >> update_items
@@ -136,14 +141,7 @@ module Make (Api: Api_type.T) = struct
             | AddFilter title -> add_filter title
                   >> update_filters
                   >> Set.input Input.empty
-            | NextFilter -> shift_filter 1
+            | ShiftSelected (fi, ii) -> shift_selected (fi, ii)
                   >> update_items
-                  >> shift_item 0
-            | PrevFilter -> shift_filter (-1)
-                  >> update_items
-                  >> shift_item 0
-            | NextItem -> shift_item 1
-            | PrevItem -> shift_item (-1)
             | Input msg -> change_input msg
 end
-

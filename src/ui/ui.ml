@@ -7,6 +7,9 @@ open For_ui
 
 let term = Term.create ()
 
+let (>>=) = Select.(>>=)
+let return = Select.return
+
 module UINode = struct
       type style =
             | Normal
@@ -31,11 +34,15 @@ module UINode = struct
             I.(before <|> curr <|> after)
 end
 
-module UIInput = struct
+(* module UIInput = struct
       let draw (_chr, _line) =
             String.split_on_char '\n'
             >> List.map @@ UINode.text Normal
             >> I.vcat
+end *)
+
+module UIInput = struct
+      let draw (input: Input.t) = UINode.(editable input.chr Normal) input.text
 end
 
 module UITag = struct
@@ -68,21 +75,33 @@ end
 module UIViewPage = struct
       let is_editing ({text; _}: Input.t) = not (text = "")
 
-      let draw items filters (Selected.(Index fi, Index ii)) ({chr; text}: Input.t) = 
-            let input = UINode.(editable chr Normal) text in
-            let items =
+      let draw_items = 
+            ViewState.Get.items >>= fun items ->
+            ViewState.Get.ii >>= fun ii ->
+
+            return (
                   items
                   |> List.mapi (fun i item -> UIItem.draw item (i = ii))
-                  |> I.vcat 
-            in
-            let filters =
+                  |> I.vcat
+            )
+
+      let draw_filters =
+            ViewState.Get.filters >>= fun filters ->
+            ViewState.Get.fi >>= fun fi ->
+
+            return (
                   filters
                   |> List.mapi (fun i filter -> UIFilter.draw filter (i = fi)) 
                   |> List.map @@ (I.pad ~r:3)
                   |> I.vcat
-            in
-            I.(input <->
-                  (filters <|> items))
+            )
+
+      let draw = 
+            (ViewState.Get.input >> UIInput.draw) >>= fun input ->
+            draw_items >>= fun items ->
+            draw_filters >>= fun filters ->
+
+            return I.(input <-> (filters <|> items))
 end
 
 module UIDetailPage = struct
@@ -115,11 +134,12 @@ module UIDetailPage = struct
                   I.(title <-> divider <-> body)
 end
 
-let draw_view items filters selected input =
-      let view = UIViewPage.draw items filters selected input in
+let draw_view (state: ViewState.t) =
+      let view = UIViewPage.draw state in
       Notty_unix.Term.image term view;
       let event = Notty_unix.Term.event term in
 
+      let input = ViewState.(Get.input state) in
       if UIViewPage.is_editing input
       then begin match event with
             | `Key (`Escape, _) -> NavigationMsg Quit
@@ -139,22 +159,16 @@ let draw_view items filters selected input =
       else begin match event with
             (* ui movement *)
             | `Key (`Arrow direction, _) -> begin match direction with
-                  | `Up -> ViewMsg PrevItem
-                  | `Down -> ViewMsg NextItem
-                  | `Left -> ViewMsg PrevFilter
-                  | `Right -> ViewMsg NextFilter
+                  | `Up -> ViewMsg (ShiftSelected (0, -1))
+                  | `Down -> ViewMsg (ShiftSelected (0, 1))
+                  | `Left -> ViewMsg (ShiftSelected (-1, 0))
+                  | `Right -> ViewMsg (ShiftSelected (1, 0))
             end
 
             (* navigation *)
             | `Key (`Escape, _) -> NavigationMsg Quit
             | `Key (`ASCII ':', _) -> ViewMsg (Input Input.(TypeChar ':'))
-            | `Key (`Enter, _) -> 
-                  begin match selected with
-                  | Selected.(Index _fi, Index ii) when ii >= 0 ->
-                        let item = List.nth items ii in
-                        NavigationMsg (ToDetail item.id)
-                  | _ -> NavigationMsg Nothing
-                  end
+            | `Key (`Enter, _) -> NavigationMsg (ToDetail ViewState.(Get.cur_item state).id)
             | _ -> NavigationMsg Nothing
       end
 
@@ -182,5 +196,5 @@ let draw_detail textarea =
 
 let draw = function
       | Detail {textarea; _} -> draw_detail textarea
-      | View {items; filters; selected; input} -> draw_view items filters selected input
+      | View state -> draw_view state
 
