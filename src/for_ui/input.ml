@@ -16,18 +16,14 @@ let empty = {
 
 let make text = { empty with text }
 
-let normalize {chr; text} =
-      let width = String.length text in
-      let chr =
-            chr
-            |> max 0
-            |> min width
-      in
-      {chr; text}
+module Get = struct
+      let chr {chr; text} =
+            let width = String.length text in
+            chr |> max 0 |> min (width - 1)
+end
 
 let shift_cursor shift_x t =
       { t with chr=t.chr + shift_x }
-      |> normalize
 
 let split_on_pos chr str =
       let len = String.length str in

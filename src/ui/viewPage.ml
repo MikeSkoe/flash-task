@@ -34,16 +34,14 @@ let draw_filters =
 let draw_input =
       ViewState.Get.input >>= fun input ->
 
-      return (
-            Node.(editable input.chr Normal) input.text
-      )
+      return Node.(editable input.chr Normal input.text)
 
-let draw = 
-      draw_input >>= fun input ->
-      draw_items >>= fun items ->
-      draw_filters >>= fun filters ->
+let draw state = 
+      let input = draw_input state in
+      let items = draw_items state in
+      let filters = draw_filters state in
 
-      return I.(input <-> (filters <|> items))
+      I.(input <-> (filters <|> items))
 
 (* TODO: not depend on state *)
 let msg_of_event state event =

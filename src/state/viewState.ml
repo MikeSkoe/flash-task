@@ -107,14 +107,12 @@ module Make (Api: Api_type.T) = struct
             let _ = Api.FilterApi.delete filter.id in
             id
 
-      let shift_selected (fi, ii) =
-            Get.items_len >>= fun items_len ->
-            Get.filters_len >>= fun filters_len ->
-            Get.selected >>= fun selected ->
+      let shift_selected (fi_shift, ii_shift) =
+            Get.fi >>= fun fi ->
+            Get.ii >>= fun ii ->
 
-            selected
-                |> Selected.(shift_filter filters_len fi)
-                |> Selected.(shift_item items_len ii)
+            Selected.make (fi, ii)
+                |> Selected.shift fi_shift ii_shift
                 |> Set.selected
 
       let update_filters st =
