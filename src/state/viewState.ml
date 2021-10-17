@@ -26,8 +26,8 @@ type msg =
       | Input of Input.msg
 
 module Get = struct
-      let (>>=) = Select.(>>=)
-      let return = Select.return
+      let (>>=) = Select.MapFn.(>>=)
+      let return = Select.MapFn.return
 
       let items {items; _} = items
       let filters {filters; _} = filters
@@ -74,7 +74,7 @@ module Set = struct
 end
 
 module Make (Api: Api_type.T) = struct
-      let (>>=) = Select.(>>=)
+      let (>>=) = Select.MapFn.(>>=)
 
       let init _t = 
             let filters = Filter.empty :: Api.FilterApi.get_all () in
@@ -93,9 +93,9 @@ module Make (Api: Api_type.T) = struct
             let _ = Api.FilterApi.add_or_replace filter in
             id
 
-      let change_input msg {items; filters; selected; input} = 
-            let input = Input.update msg input in
-            {items; filters; selected; input}
+      let change_input msg = 
+            Get.input >>= fun input ->
+            Set.input Input.(update msg input)
 
       let delete_item =
             Get.cur_item >>= fun item ->
@@ -112,17 +112,19 @@ module Make (Api: Api_type.T) = struct
             Get.ii >>= fun ii ->
 
             Selected.make (fi, ii)
-                |> Selected.shift fi_shift ii_shift
-                |> Set.selected
+            |> Selected.shift fi_shift ii_shift
+            |> Set.selected
 
-      let update_filters st =
+      let update_filters =
             let filters = Filter.empty :: Api.FilterApi.get_all () in
-            Set.filters filters st
 
-      let update_items st =
-            let cur_filter = Get.cur_filter st in
+            Set.filters filters
+
+      let update_items =
+            Get.cur_filter >>= fun cur_filter ->
+
             let items = Api.ItemApi.get_via_filter cur_filter in
-            Set.items items st
+            Set.items items
 
       let update = function
             | Init -> init
@@ -143,3 +145,4 @@ module Make (Api: Api_type.T) = struct
                   >> update_items
             | Input msg -> change_input msg
 end
+

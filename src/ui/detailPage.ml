@@ -17,12 +17,12 @@ let image_of_body chr line =
       )
       >> I.vcat
 
-let draw ({pos; data}: Textarea.t) = 
+let draw state = 
+      let {Textarea.pos; Textarea.data} = DetailState.Get.textarea state in
       match String.split_on_char '\n' data with
       | [] ->
             I.empty
-      | title :: []
-      | title :: "" :: [] ->
+      | title :: [] ->
             let (chr, line) = pos in
             let title = image_of_title chr line title in 
             title

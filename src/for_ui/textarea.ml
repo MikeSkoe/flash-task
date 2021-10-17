@@ -6,6 +6,7 @@ type msg =
       | DelChar
 
 (* TODO:? rewrite to functor with current line as inner value *)
+(* TODO:? generalize with input *)
 type t = {
       pos: int * int;
       data: string;

@@ -16,8 +16,8 @@ let draw_view (state: ViewState.t) =
       Notty_unix.Term.event term
       |> ViewPage.msg_of_event state
 
-let draw_detail (state: DetailState.t) =
-      let view = DetailPage.draw state.textarea in
+let draw_detail state =
+      let view = DetailPage.draw state in
       Notty_unix.Term.image term view;
 
       Notty_unix.Term.event term

@@ -16,24 +16,28 @@ type msg =
       | Input of Textarea.msg
       | SaveItem
 
+module Get = struct
+      let id {id; _} = id
+
+      let item {id; textarea} = textarea.data |> Parser.item_of_string id
+
+      let upd_textarea msg {textarea; _} = Textarea.update msg textarea
+
+      let textarea {textarea; _} = textarea
+end
+
+module Set = struct
+      let textarea textarea st = {st with textarea}
+end
+
 module Make (Api: Api_type.T) = struct
-      let rec iter_right (item: Item.t) = function
-            | [] -> item
-            | head :: (next: Item.t) :: _ when head.id = item.id -> next 
-            | _ :: tail -> iter_right item tail 
+      let (>>=) = Select.MapFn.(>>=)
+      let id = Select.MapFn.id
 
-      let rec iter_left (item: Item.t) = function
-            | [] -> item
-            | prev :: (head: Item.t) :: _ when head.id = item.id -> prev 
-            | _ :: tail -> iter_left item tail 
-
-      let save_item {id; textarea; _} =
-            let item =
-                  textarea.data
-                  |> Parser.item_of_string id
-            in
+      let save_item =
+            Get.item >>= fun item ->
             let _ = Api.ItemApi.add_or_replace item in
-            {id; textarea}
+            id
 
       let init id _t = 
             let items = Api.ItemApi.get_all () in
@@ -44,12 +48,13 @@ module Make (Api: Api_type.T) = struct
             let textarea = Textarea.make Parser.(string_of_item cur_item) in
             {id; textarea}
 
-      let change_input msg {id; textarea} = 
-            let textarea = Textarea.update msg textarea in
-            {id; textarea}
+      let change_input msg = 
+            Get.upd_textarea msg >>= fun textarea ->
+            Set.textarea textarea
 
       let update = function
             | Init id -> init id
             | SaveItem -> save_item
             | Input msg -> change_input msg 
 end
+
