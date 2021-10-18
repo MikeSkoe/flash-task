@@ -26,8 +26,9 @@ type msg =
       | Input of Input.msg
 
 module Get = struct
-      let (>>=) = Select.MapFn.(>>=)
-      let return = Select.MapFn.return
+      let (>>=) = Select.(>>=)
+      let (>>=>) fn bind_fn = Select.(bind ~map:(memo ~eq:(=))) fn bind_fn
+      let return = Select.return
 
       let items {items; _} = items
       let filters {filters; _} = filters
@@ -38,32 +39,32 @@ module Get = struct
       let filters_len {filters; _} = List.length filters
 
       let fi =
-            filters_len >>= fun filters_len ->
+            filters_len >>=> fun filters_len ->
             (selected >> Selected.Get.fi) >>= fun fi ->
 
             return (fi |> max 0 |> min (filters_len - 1))
 
       let ii =
-            items_len >>= fun items_len ->
+            items_len >>=> fun items_len ->
             (selected >> Selected.Get.ii) >>= fun ii ->
 
             return (ii |> max 0 |> min (items_len - 1))
 
-      let cur_filter =
-            filters >>= fun filters ->
-            fi >>= fun fi ->
-
-            return @@
-                  try List.nth filters fi
-                  with _ -> Filter.empty
-
       let cur_item =
-            items >>= fun items ->
-            ii >>= fun ii ->
+            items >>=> fun items ->
+            ii >>=> fun ii ->
 
             return @@
                   try List.nth items ii
                   with _ -> Item.empty
+
+      let cur_filter =
+            filters >>=> fun filters ->
+            fi >>=> fun fi ->
+
+            return @@
+                  try List.nth filters fi
+                  with _ -> Filter.empty
 end
 
 module Set = struct
@@ -74,7 +75,7 @@ module Set = struct
 end
 
 module Make (Api: Api_type.T) = struct
-      let (>>=) = Select.MapFn.(>>=)
+      let (>>=) = Select.(>>=)
 
       let init _t = 
             let filters = Filter.empty :: Api.FilterApi.get_all () in

@@ -31,8 +31,8 @@ module Set = struct
 end
 
 module Make (Api: Api_type.T) = struct
-      let (>>=) = Select.MapFn.(>>=)
-      let id = Select.MapFn.id
+      let (>>=) = Select.(>>=)
+      let id = Select.id
 
       let save_item =
             Get.item >>= fun item ->

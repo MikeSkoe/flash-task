@@ -46,7 +46,7 @@ module Set = struct
       let chr chr t = {t with chr}
 end
 
-let (>>=) = Select.MapFn.(>>=)
+let (>>=) = Select.(>>=)
 
 let shift_cursor shift_x =
       Get.chr >>= fun chr ->
