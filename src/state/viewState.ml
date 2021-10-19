@@ -116,10 +116,10 @@ module Make (Api: Api_type.T) = struct
             |> Selected.shift fi_shift ii_shift
             |> Set.selected
 
-      let update_filters =
+      let update_filters st =
             let filters = Filter.empty :: Api.FilterApi.get_all () in
 
-            Set.filters filters
+            Set.filters filters st
 
       let update_items =
             Get.cur_filter >>= fun cur_filter ->

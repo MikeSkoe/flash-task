@@ -22,11 +22,11 @@ type t =
 let empty = View ViewState.empty
 
 module Make (API: Api_type.T) = struct
-      module ViewState' = ViewState.Make (API)
-      module DetailState' = DetailState.Make (API)
-
       let _ = API.ItemApi.create_table ()
       let _ = API.FilterApi.create_table ()
+
+      module ViewState' = ViewState.Make (API)
+      module DetailState' = DetailState.Make (API)
 
       let update state msg = match state, msg with
             | (View view_data, ViewMsg msg) -> View ViewState'.(update msg view_data)
