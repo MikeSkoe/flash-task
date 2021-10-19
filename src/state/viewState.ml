@@ -38,17 +38,14 @@ module Get = struct
       let items_len {items; _} = List.length items
       let filters_len {filters; _} = List.length filters
 
-      let fi =
-            filters_len >>=> fun filters_len ->
-            (selected >> Selected.Get.fi) >>= fun fi ->
+      let get_index get_len index_of_selected =
+            get_len >>=> fun len ->
+            (selected >> index_of_selected) >>= fun index ->
 
-            return (fi |> max 0 |> min (filters_len - 1))
+            return (index |> max 0 |> min (len - 1))
 
-      let ii =
-            items_len >>=> fun items_len ->
-            (selected >> Selected.Get.ii) >>= fun ii ->
-
-            return (ii |> max 0 |> min (items_len - 1))
+      let fi = get_index filters_len Selected.Get.fi
+      let ii = get_index items_len Selected.Get.ii
 
       let selected =
           fi >>= fun fi ->
@@ -56,21 +53,16 @@ module Get = struct
 
           return @@ Selected.make (fi, ii)
 
-      let cur_item =
-            items >>=> fun items ->
-            ii >>=> fun ii ->
+      let cur_entity get_entities get_index empty =
+            get_entities >>=> fun entities ->
+            get_index >>=> fun index ->
 
             return @@
-                  try List.nth items ii
-                  with _ -> Item.empty
+                  try List.nth entities index
+                  with _ -> empty
 
-      let cur_filter =
-            filters >>=> fun filters ->
-            fi >>=> fun fi ->
-
-            return @@
-                  try List.nth filters fi
-                  with _ -> Filter.empty
+      let cur_item = cur_entity items ii Item.empty
+      let cur_filter = cur_entity filters fi Filter.empty
 end
 
 module Set = struct
