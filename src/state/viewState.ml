@@ -27,7 +27,7 @@ type msg =
 
 module Get = struct
       let (>>=) = Select.(>>=)
-      let (>>=>) fn bind_fn = Select.(bind ~map:(memo ~eq:(=))) fn bind_fn
+      let (>>=>) fn bind_fn = Select.(fn >>= memo bind_fn)
       let return = Select.return
 
       let items {items; _} = items
@@ -49,6 +49,12 @@ module Get = struct
             (selected >> Selected.Get.ii) >>= fun ii ->
 
             return (ii |> max 0 |> min (items_len - 1))
+
+      let selected =
+          fi >>= fun fi ->
+          ii >>= fun ii ->
+
+          return @@ Selected.make (fi, ii)
 
       let cur_item =
             items >>=> fun items ->
@@ -109,10 +115,9 @@ module Make (Api: Api_type.T) = struct
             id
 
       let shift_selected (fi_shift, ii_shift) =
-            Get.fi >>= fun fi ->
-            Get.ii >>= fun ii ->
+            Get.selected >>= fun selected ->
 
-            Selected.make (fi, ii)
+            selected
             |> Selected.shift fi_shift ii_shift
             |> Set.selected
 
