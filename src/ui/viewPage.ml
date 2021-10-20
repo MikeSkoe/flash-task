@@ -16,7 +16,7 @@ let draw_items =
 
       return (
             items
-            |> List.mapi (fun i item -> UI.Item.draw item (i = ii))
+            |> List.mapi (fun i item -> UI.Item.draw ~item ~is_selected:(i = ii))
             |> I.vcat
       )
 
@@ -26,7 +26,7 @@ let draw_filters =
 
       return (
             filters
-            |> List.mapi (fun i filter -> UI.Filter.draw filter (i = fi)) 
+            |> List.mapi (fun i filter -> UI.Filter.draw ~filter ~is_selected:(i = fi)) 
             |> List.map @@ (I.pad ~r:3)
             |> I.vcat
       )
@@ -43,8 +43,7 @@ let draw state =
 
       I.(input <-> (filters <|> items))
 
-(* TODO: not depend on state *)
-let msg_of_event state event =
+let msg_of_event event state =
       let input = ViewState.Get.input state in
 
       if is_editing input
@@ -78,3 +77,4 @@ let msg_of_event state event =
             | `Key (`Enter, _) -> NavigationMsg (ToDetail ViewState.(Get.cur_item state).id)
             | _ -> NavigationMsg Nothing
       end
+

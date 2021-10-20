@@ -9,20 +9,17 @@ let term = Term.create ()
 let (>>=) = Select.(>>=)
 let return = Select.return
 
-let draw_view (state: ViewState.t) =
-      let view = ViewPage.draw state in
+let draw_view =
+      ViewPage.draw >>= fun view ->
       Notty_unix.Term.image term view;
 
-      Notty_unix.Term.event term
-      |> ViewPage.msg_of_event state
+      ViewPage.msg_of_event Term.(event term)
 
-let draw_detail state =
-      let view = DetailPage.draw state in
+let draw_detail =
+      DetailPage.draw >>= fun view ->
       Notty_unix.Term.image term view;
-
-      Notty_unix.Term.event term
-      |> DetailPage.msg_of_event
-
+      
+      return @@ DetailPage.msg_of_event Term.(event term)
 
 let draw = function
       | Detail state -> draw_detail state

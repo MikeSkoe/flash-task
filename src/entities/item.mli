@@ -5,6 +5,10 @@ type t = private {
       body: string;
 }
 
+module Get: sig
+    val title: t -> string
+end
+
 module Set: sig
     val id: t Id.t -> t -> t
 end

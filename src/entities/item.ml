@@ -5,6 +5,10 @@ type t = {
       body: string;
 }
 
+module Get = struct
+     let title {title; _} = title
+end
+
 module Set = struct
       let id id t = {t with id}
 end
